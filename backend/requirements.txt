@@ -1,0 +1,29 @@
+# Core API & Server
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+
+# Database & Validation
+sqlalchemy
+psycopg2-binary
+pydantic
+
+# Security & Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+email-validator
+
+# AI Integration
+ollama
+
+# Computer Vision (Video Interview)
+opencv-python
+mediapipe
+
+# PDF Processing (Resume & Reports)
+pypdf
+reportlab
+
+# File Handling Utilities
+aiofiles
