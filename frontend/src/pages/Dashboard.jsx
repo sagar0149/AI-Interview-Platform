@@ -200,8 +200,8 @@ function Dashboard() {
             boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)"
           }}>
             <div style={{ maxWidth: "65%" }}>
-              <h1 style={{ fontSize: "48px", fontWeight: "800", marginBottom: "15px", display: "flex", alignItems: "center", gap: "15px" }}>
-                Land Your Dream Job 🚀
+              <h1 style={{ fontSize: "48px", fontWeight: "800", marginBottom: "15px" }}>
+                Land Your Dream Job
               </h1>
               <p style={{ fontSize: "16px", color: "#dbeafe", marginBottom: "30px", lineHeight: "1.6" }}>
                 Master your next interview with AI-driven insights, resume optimization, and real-time performance tracking.
@@ -225,9 +225,6 @@ function Dashboard() {
                 Start Your Journey →
               </button>
             </div>
-            
-            {/* Robot Illustration */}
-            <div style={{ fontSize: "120px", marginRight: "20px" }}>🤖</div>
           </div>
 
           {/* Stats Section */}
