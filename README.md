@@ -1037,6 +1037,8 @@ This project was collaboratively developed by:
 ## Roshan Kushwaha
 
 - 💻 **GitHub:** https://github.com/roshancse0608
+- 💼 **LinkedIn:**https://www.linkedin.com/in/roshan-kushwaha-a6147a378
+- 📧 **Email:** roshankushwaha574@gmail.com
 
 ---
 
