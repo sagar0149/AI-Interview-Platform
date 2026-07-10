@@ -1024,14 +1024,14 @@ This project was collaboratively developed by:
 
 - 💻 **GitHub:** https://github.com/sagar0149
 - 💼 **LinkedIn:** https://www.linkedin.com/in/sagar-raj-sharma-647255383
-- 📧 **Email:** sagarraj047@gmail.com
+- 📧 **Email:** sagarrajsharma047@gmail.com
 
 ---
 
 ## Shivam Vishwakarma
 
 - 💻 **GitHub:** https://github.com/Shivamvishwakarma0122
-
+- 📧 **Email:** shivamvishwakarma0122@gmail.com
 ---
 
 ## Roshan Kushwaha
