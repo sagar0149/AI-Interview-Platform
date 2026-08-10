@@ -12,7 +12,7 @@ router = APIRouter(
     tags=["Video"]
 )
 
-UPLOAD_FOLDER = "video_uploads"
+UPLOAD_FOLDER = "/tmp/video_uploads"
 
 os.makedirs(
     UPLOAD_FOLDER,
