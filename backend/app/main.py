@@ -60,5 +60,5 @@ def root():
 def health():
     return {
         "server": "running",
-        "database": "sqlite"
+        "database": "postgresql" if not str(engine.url).startswith("sqlite") else "sqlite"
     }
