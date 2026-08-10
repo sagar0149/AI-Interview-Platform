@@ -30,7 +30,7 @@ function Analytics() {
   const fetchAnalytics = async () => {
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8000/interview/analytics"
+        "/api/interview/analytics"
       );
       setData(response.data);
     } catch (error) {

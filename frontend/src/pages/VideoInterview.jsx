@@ -115,7 +115,7 @@ function VideoInterview() {
         formData.append("question", currentQuestion);
 
         const response = await axios.post(
-          "http://127.0.0.1:8000/video/upload",
+          "/api/video/upload",
           formData,
           {
             headers: {

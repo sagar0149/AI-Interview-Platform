@@ -17,7 +17,7 @@ function History() {
 
       const response =
         await axios.get(
-          "http://127.0.0.1:8000/interview/history"
+          "/api/interview/history"
         );
 
       setHistory(

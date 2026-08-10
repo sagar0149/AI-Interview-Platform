@@ -33,7 +33,7 @@ function ResumeUpload() {
       setAnalysis(null); // Clear previous analysis
 
       const response = await axios.post(
-        "http://127.0.0.1:8000/resume/upload",
+        "/api/resume/upload",
         formData,
         {
           headers: {

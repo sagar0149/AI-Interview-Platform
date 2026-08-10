@@ -101,7 +101,7 @@ function VoiceInterview() {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://127.0.0.1:8000/interview/evaluate",
+        "/api/interview/evaluate",
         {
           question: questions[currentQuestion],
           answer: transcript,

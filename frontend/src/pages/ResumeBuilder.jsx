@@ -31,7 +31,7 @@ function ResumeBuilder() {
     try {
       setIsGenerating(true);
       const response = await axios.post(
-        "http://127.0.0.1:8000/resume-builder/generate-summary",
+        "/api/resume-builder/generate-summary",
         { skills: formData.skills, projects: formData.projects }
       );
       setFormData({ ...formData, summary: response.data.summary });
@@ -47,7 +47,7 @@ function ResumeBuilder() {
     try {
       setIsDownloading(true);
       const response = await axios.post(
-        "http://127.0.0.1:8000/resume-builder/generate-pdf",
+        "/api/resume-builder/generate-pdf",
         formData,
         { responseType: "blob" }
       );
