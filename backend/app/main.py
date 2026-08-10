@@ -11,7 +11,7 @@ from app.models.interview_result import InterviewResult
 from app.routers import auth
 from app.routers import resume
 from app.routers import interview
-from app.routers import video
+#from app.routers import video
 from app.routers import resume_builder
 from app.routers import profile
 
@@ -22,9 +22,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.include_router(
-    video.router
-)
+#app.include_router(
+ #   video.router
+#)
 
 app.include_router(
     profile.router
