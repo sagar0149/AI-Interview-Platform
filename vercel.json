@@ -7,7 +7,7 @@
     },
     "backend": {
       "root": "backend/",
-      "entrypoint": "app.app:app"
+      "entrypoint": "app.main:app"
     }
   },
   "rewrites": [
