@@ -7,7 +7,8 @@
     },
     "backend": {
       "root": "backend/",
-      "entrypoint": "app.main:app"
+      "entrypoint": "app.main:app",
+      "framework": "fastapi"
     }
   },
   "rewrites": [

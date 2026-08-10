@@ -33,7 +33,7 @@ from app.config.email_config import (
 )
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/api/auth",
     tags=["Authentication"]
 )
 

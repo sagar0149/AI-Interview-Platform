@@ -48,7 +48,7 @@ app.include_router(resume.router)
 app.include_router(interview.router)
 
 
-@app.get("/")
+@app.get("/api/")
 def root():
     return {
         "message": "AI Interview Platform Backend Running",
@@ -56,7 +56,7 @@ def root():
     }
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health():
     return {
         "server": "running",

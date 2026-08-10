@@ -21,7 +21,7 @@ import uuid
 import os
 
 router = APIRouter(
-    prefix="/resume-builder",
+    prefix="/api/resume-builder",
     tags=["Resume Builder"]
 )
 

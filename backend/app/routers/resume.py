@@ -14,7 +14,7 @@ from app.ai.ollama_service import (
 )
 
 router = APIRouter(
-    prefix="/resume",
+    prefix="/api/resume",
     tags=["Resume"]
 )
 

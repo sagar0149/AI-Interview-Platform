@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.user import User
 
 router = APIRouter(
-    prefix="/profile",
+    prefix="/api/profile",
     tags=["Profile"]
 )
 

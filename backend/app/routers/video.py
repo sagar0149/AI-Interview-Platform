@@ -8,7 +8,7 @@ import os
 from app.services.video_analysis import analyze_video
 
 router = APIRouter(
-    prefix="/video",
+    prefix="/api/video",
     tags=["Video"]
 )
 

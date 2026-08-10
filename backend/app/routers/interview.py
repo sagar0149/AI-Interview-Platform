@@ -17,7 +17,7 @@ from app.ai.ollama_service import (
 )
 
 router = APIRouter(
-    prefix="/interview",
+    prefix="/api/interview",
     tags=["Interview"]
 )
 
