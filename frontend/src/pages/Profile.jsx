@@ -39,7 +39,7 @@ function Profile() {
   const fetchProfile = async () => {
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/profile/${userId}`
+        `/api/profile/${userId}`
       );
       setName(response.data.name);
       setEmail(response.data.email);
@@ -57,7 +57,7 @@ function Profile() {
   const saveProfile = async () => {
     try {
       const response = await axios.put(
-        `http://127.0.0.1:8000/profile/update/${userId}`,
+        `/api/profile/update/${userId}`,
         { name, email }
       );
       showNotification(response.data.message || "Profile updated successfully!", "success");
@@ -80,7 +80,7 @@ function Profile() {
 
     try {
       const response = await axios.put(
-        `http://127.0.0.1:8000/profile/change-password/${userId}`,
+        `/api/profile/change-password/${userId}`,
         {
           current_password: currentPassword,
           new_password: newPassword,
