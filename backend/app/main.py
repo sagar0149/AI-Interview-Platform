@@ -15,7 +15,7 @@ from app.routers import interview
 from app.routers import resume_builder
 from app.routers import profile
 
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="AI Interview Platform",
