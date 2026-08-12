@@ -16,7 +16,7 @@ bcrypt==4.3.0
 email-validator
 
 # AI Integration
-ollama
+google-genai
 
 # Computer Vision (Video Interview)
 opencv-python

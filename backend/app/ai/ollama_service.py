@@ -1,20 +1,53 @@
-
+import os
 import re
 import json
-from ollama import chat
+
+from google import genai
 
 
-# ==========================
+# ==========================================
+# Gemini Client
+# ==========================================
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY is not configured.")
+
+client = genai.Client(
+    api_key=GEMINI_API_KEY
+)
+
+
+MODEL_NAME = "gemini-3.6-flash"
+
+
+# ==========================================
+# Helper: Generate Gemini Response
+# ==========================================
+
+def generate_response(prompt: str) -> str:
+
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=prompt
+    )
+
+    return response.text.strip()
+
+
+# ==========================================
 # Resume Analysis
-# ==========================
+# ==========================================
+
 def analyze_resume(resume_text):
 
     prompt = f"""
 You are an expert ATS Resume Analyzer.
 
-Analyze the resume and return ONLY valid JSON.
+Analyze the following resume and return ONLY valid JSON.
 
-Format:
+Use EXACTLY this structure:
 
 {{
     "ats_score": 0,
@@ -32,17 +65,18 @@ Rules:
 
 - ATS score must be between 0 and 100.
 - Extract actual education from the resume.
-- Extract actual experience from the resume.
-- Extract actual skills from the resume.
-- Identify strengths.
-- Identify weaknesses.
+- Extract actual work experience from the resume.
+- Extract actual technical and professional skills.
+- Identify genuine strengths.
+- Identify genuine weaknesses.
 - Suggest suitable job roles.
-- Suggest missing keywords.
-- Suggest resume improvements.
+- Suggest relevant missing keywords.
+- Suggest practical resume improvements.
+- Do not invent experience that is not present.
 - Return ONLY JSON.
-- No markdown.
-- No explanation.
-- No code block.
+- Do not use markdown.
+- Do not use ```json.
+- Do not add explanations outside the JSON.
 
 Resume:
 
@@ -51,20 +85,9 @@ Resume:
 
     try:
 
-        response = chat(
-            model="llama3.1:8b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
+        content = generate_response(prompt)
 
-        content = response[
-            "message"
-        ]["content"].strip()
-
+        # Remove accidental markdown if Gemini adds it
         content = content.replace(
             "```json",
             ""
@@ -75,9 +98,9 @@ Resume:
             ""
         )
 
-        result = json.loads(
-            content
-        )
+        content = content.strip()
+
+        result = json.loads(content)
 
         return result
 
@@ -103,85 +126,93 @@ Resume:
         }
 
 
-# ==========================
-# Interview Questions
-# ==========================
+# ==========================================
+# Generate Interview Questions
+# ==========================================
+
 def generate_interview_questions(
     resume_text
 ):
 
     prompt = f"""
+You are an expert technical interviewer.
+
 Generate 10 interview questions based on this resume.
 
-Mix:
-- Technical Questions
-- HR Questions
-- Project Questions
+Include a mixture of:
+
+- Technical questions
+- HR questions
+- Project questions
+- Questions about skills listed in the resume
+- Questions about the candidate's experience
 
 Resume:
 
 {resume_text}
 
-Return only questions.
+Return ONLY the questions.
+
+Return one question per line.
+Do not add explanations.
+Do not use markdown.
 """
 
     try:
 
-        response = chat(
-            model="llama3.1:8b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-
-        content = response[
-            "message"
-        ]["content"]
+        content = generate_response(prompt)
 
         questions = []
 
-        for line in content.split(
-            "\n"
-        ):
+        for line in content.split("\n"):
 
             line = line.strip()
+
+            # Remove common numbering
+            line = re.sub(
+                r"^[\-\*\d\.\)\s]+",
+                "",
+                line
+            ).strip()
 
             if (
                 len(line) > 5
                 and "?" in line
             ):
-                questions.append(
-                    line
-                )
+                questions.append(line)
 
-        if len(questions) > 0:
-            return questions
+        if len(questions) >= 5:
 
-        return [
-            "Tell me about yourself",
-            "What is Python?",
-            "What is FastAPI?",
-            "Explain REST API",
-            "Describe one project from your resume"
-        ]
-
-    except Exception:
+            return questions[:10]
 
         return [
-            "Tell me about yourself",
-            "What is Python?",
-            "What is FastAPI?",
-            "Explain REST API",
-            "Describe one project from your resume"
+            "Tell me about yourself.",
+            "What are your strongest technical skills?",
+            "Explain one project from your resume.",
+            "What challenges did you face while developing your project?",
+            "Why should we hire you?"
+        ]
+
+    except Exception as e:
+
+        print(
+            "Interview Question Error:",
+            str(e)
+        )
+
+        return [
+            "Tell me about yourself.",
+            "What are your strongest technical skills?",
+            "Explain one project from your resume.",
+            "What challenges did you face while developing your project?",
+            "Why should we hire you?"
         ]
 
 
-# ==========================
-# Evaluate Answer
-# ==========================
+# ==========================================
+# Evaluate Interview Answer
+# ==========================================
+
 def evaluate_answer(
     question,
     answer
@@ -190,13 +221,15 @@ def evaluate_answer(
     prompt = f"""
 You are a Senior Technical Interviewer.
 
+Evaluate the candidate's answer.
+
 Question:
+
 {question}
 
 Candidate Answer:
-{answer}
 
-Evaluate the answer.
+{answer}
 
 Return EXACTLY in this format:
 
@@ -218,39 +251,35 @@ Keywords Interviewers Expect:
 ...
 
 Ideal Answer:
-Provide a professional answer that would score 10/10.
+...
 
 Final Feedback:
 ...
+
+The score must be between 0 and 10.
 """
 
     try:
 
-        response = chat(
-            model="llama3.1:8b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-
-        evaluation = response[
-            "message"
-        ]["content"]
+        evaluation = generate_response(prompt)
 
         score = 0
 
         match = re.search(
             r"Score:\s*(\d+)",
-            evaluation
+            evaluation,
+            re.IGNORECASE
         )
 
         if match:
 
             score = int(
                 match.group(1)
+            )
+
+            score = max(
+                0,
+                min(10, score)
             )
 
         return {
@@ -260,9 +289,13 @@ Final Feedback:
 
     except Exception as e:
 
+        print(
+            "Answer Evaluation Error:",
+            str(e)
+        )
+
         return {
             "score": 0,
             "evaluation":
-            f"Evaluation Error: {str(e)}"
+                f"Evaluation Error: {str(e)}"
         }
-
