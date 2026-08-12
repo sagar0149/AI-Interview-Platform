@@ -1,11 +1,9 @@
-from ollama import chat
-from pydantic import BaseModel
-class SummaryRequest(BaseModel):
-    skills: str
-    projects: str
+import os
+import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from reportlab.platypus import (
     SimpleDocTemplate,
@@ -13,12 +11,30 @@ from reportlab.platypus import (
     Spacer
 )
 
-from reportlab.lib.styles import (
-    getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet
+
+from google import genai
+
+
+# ==========================================
+# Gemini Configuration
+# ==========================================
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY is not configured.")
+
+client = genai.Client(
+    api_key=GEMINI_API_KEY
 )
 
-import uuid
-import os
+MODEL_NAME = "gemini-3.6-flash"
+
+
+# ==========================================
+# Router
+# ==========================================
 
 router = APIRouter(
     prefix="/api/resume-builder",
@@ -26,120 +42,163 @@ router = APIRouter(
 )
 
 
+# ==========================================
+# Request Model
+# ==========================================
+
+class SummaryRequest(BaseModel):
+    skills: str
+    projects: str
+
+
+# ==========================================
+# Generate Resume PDF
+# ==========================================
+
 @router.post("/generate-pdf")
 async def generate_resume_pdf(
     data: dict
 ):
 
-    filename = (
-        f"resume_{uuid.uuid4()}.pdf"
-    )
+    try:
 
-    pdf_path = os.path.join(
-        "generated_resumes",
-        filename
-    )
+        # Vercel allows temporary file storage in /tmp
+        output_folder = "/tmp/generated_resumes"
 
-    os.makedirs(
-        "generated_resumes",
-        exist_ok=True
-    )
-
-    doc = SimpleDocTemplate(
-        pdf_path
-    )
-
-    styles = (
-        getSampleStyleSheet()
-    )
-
-    content = []
-
-    content.append(
-        Paragraph(
-            data.get(
-                "name",
-                ""
-            ),
-            styles["Title"]
+        os.makedirs(
+            output_folder,
+            exist_ok=True
         )
-    )
 
-    content.append(
-        Spacer(1, 12)
-    )
-
-    content.append(
-        Paragraph(
-            f"Email: {data.get('email','')}",
-            styles["BodyText"]
+        filename = (
+            f"resume_{uuid.uuid4()}.pdf"
         )
-    )
 
-    content.append(
-        Paragraph(
-            f"Phone: {data.get('phone','')}",
-            styles["BodyText"]
+        pdf_path = os.path.join(
+            output_folder,
+            filename
         )
-    )
 
-    content.append(
-        Paragraph(
-            f"Location: {data.get('location','')}",
-            styles["BodyText"]
+        doc = SimpleDocTemplate(
+            pdf_path
         )
-    )
 
-    content.append(
-        Spacer(1, 12)
-    )
+        styles = getSampleStyleSheet()
 
-    sections = [
-        "summary",
-        "experience",
-        "education",
-        "skills",
-        "projects",
-        "certifications",
-        "achievements",
-        "languages",
-        "interests"
-    ]
+        content = []
 
-    for section in sections:
+        # ==================================
+        # Personal Information
+        # ==================================
 
         content.append(
             Paragraph(
-                section.title(),
-                styles["Heading2"]
+                str(data.get("name", "")),
+                styles["Title"]
             )
         )
 
         content.append(
+            Spacer(1, 12)
+        )
+
+        content.append(
             Paragraph(
-                data.get(
-                    section,
-                    ""
-                ),
+                f"Email: {data.get('email', '')}",
                 styles["BodyText"]
             )
         )
 
         content.append(
-            Spacer(1, 10)
+            Paragraph(
+                f"Phone: {data.get('phone', '')}",
+                styles["BodyText"]
+            )
         )
 
-    doc.build(content)
+        content.append(
+            Paragraph(
+                f"Location: {data.get('location', '')}",
+                styles["BodyText"]
+            )
+        )
 
-    return FileResponse(
-        pdf_path,
-        media_type=
-        "application/pdf",
-        filename="Resume.pdf"
-    )
-    
-    
-    
+        content.append(
+            Spacer(1, 12)
+        )
+
+        # ==================================
+        # Resume Sections
+        # ==================================
+
+        sections = [
+            "summary",
+            "experience",
+            "education",
+            "skills",
+            "projects",
+            "certifications",
+            "achievements",
+            "languages",
+            "interests"
+        ]
+
+        for section in sections:
+
+            value = data.get(
+                section,
+                ""
+            )
+
+            if value:
+
+                content.append(
+                    Paragraph(
+                        section.title(),
+                        styles["Heading2"]
+                    )
+                )
+
+                content.append(
+                    Paragraph(
+                        str(value),
+                        styles["BodyText"]
+                    )
+                )
+
+                content.append(
+                    Spacer(1, 10)
+                )
+
+        # ==================================
+        # Create PDF
+        # ==================================
+
+        doc.build(content)
+
+        return FileResponse(
+            pdf_path,
+            media_type="application/pdf",
+            filename="Resume.pdf"
+        )
+
+    except Exception as e:
+
+        print(
+            "Resume PDF Error:",
+            str(e)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"PDF generation failed: {str(e)}"
+        )
+
+
+# ==========================================
+# Generate AI Resume Summary
+# ==========================================
+
 @router.post("/generate-summary")
 async def generate_summary(
     data: SummaryRequest
@@ -148,7 +207,7 @@ async def generate_summary(
     prompt = f"""
 You are a professional resume writer.
 
-Generate a professional resume summary.
+Generate a professional resume summary for a candidate.
 
 Skills:
 {data.skills}
@@ -158,23 +217,37 @@ Projects:
 
 Write 4-5 professional sentences.
 
-Return only the summary.
+The summary should:
+- Be professional.
+- Be suitable for a modern resume.
+- Highlight relevant technical skills.
+- Mention project experience where appropriate.
+- Avoid making up information.
+- Be concise.
+- Return ONLY the summary.
 """
 
-    response = chat(
-        model="llama3.1:8b",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    )
+    try:
 
-    return {
-        "summary":
-        response["message"]["content"]
-    }
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
 
+        summary = response.text.strip()
 
+        return {
+            "summary": summary
+        }
 
+    except Exception as e:
+
+        print(
+            "Resume Summary Error:",
+            str(e)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI summary generation failed: {str(e)}"
+        )
