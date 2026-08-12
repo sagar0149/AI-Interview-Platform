@@ -225,7 +225,7 @@ function VoiceInterview() {
                   onClick={speakQuestion}
                   style={{
                     display: "flex", alignItems: "center", gap: "10px",
-                    padding: "16px 32px", border: "none", borderRadius: "50px",
+                    padding: "16px 32px", borderRadius: "50px",
                     background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
                     color: "white", fontWeight: "bold", fontSize: "16px", cursor: "pointer", transition: "all 0.2s",
                   }}
@@ -254,7 +254,7 @@ function VoiceInterview() {
                   disabled={!listening}
                   style={{
                     display: "flex", alignItems: "center", gap: "10px",
-                    padding: "16px 32px", border: "none", borderRadius: "50px",
+                    padding: "16px 32px", borderRadius: "50px",
                     background: listening ? "rgba(239, 68, 68, 0.1)" : "rgba(255,255,255,0.05)", 
                     border: listening ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(255,255,255,0.1)",
                     color: listening ? "#fca5a5" : "#94a3b8", fontWeight: "bold", fontSize: "16px", 
@@ -321,7 +321,7 @@ function VoiceInterview() {
                     onClick={downloadReport}
                     style={{
                       display: "flex", alignItems: "center", gap: "8px",
-                      padding: "12px 24px", border: "none", borderRadius: "12px",
+                      padding: "12px 24px", borderRadius: "12px",
                       background: "rgba(34, 197, 94, 0.15)", color: "#4ade80",
                       fontWeight: "bold", cursor: "pointer", border: "1px solid rgba(34, 197, 94, 0.3)",
                       transition: "all 0.2s",
