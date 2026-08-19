@@ -1,163 +1,291 @@
-
-from fastapi import APIRouter
-from fastapi import Depends
-from fastapi import HTTPException
-
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 
-from app.schemas.user import UserCreate
-from app.schemas.user import UserLogin
+from app.schemas.user import (
+    UserCreate,
+    UserLogin,
+    ForgotPasswordRequest,
+    VerifyOTPRequest,
+)
 
 from app.services.auth_service import (
     create_user,
-    authenticate_user
+    authenticate_user,
 )
 
-from app.core.security import (
-    hash_password
-)
-
-import random
+from app.core.security import hash_password
 
 from app.models.user import User
 
-from app.schemas.user import (
-    ForgotPasswordRequest,
-    VerifyOTPRequest
-)
+from app.config.email_config import send_otp_email
 
-from app.config.email_config import (
-    send_otp_email
-)
+import random
+
 
 router = APIRouter(
     prefix="/api/auth",
-    tags=["Authentication"]
+    tags=["Authentication"],
 )
 
 
-# ==========================
-# Register
-# ==========================
+# =========================================================
+# REGISTER
+# =========================================================
+
 @router.post("/register")
 def register(
     user: UserCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return create_user(
         db,
         user.name,
         user.email,
-        user.password
+        user.password,
     )
 
 
-# ==========================
-# Login
-# ==========================
+# =========================================================
+# LOGIN
+# =========================================================
+
 @router.post("/login")
 def login(
     user: UserLogin,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     db_user = authenticate_user(
         db,
         user.email,
-        user.password
+        user.password,
     )
 
     if not db_user:
         raise HTTPException(
             status_code=401,
-            detail="Invalid credentials"
+            detail="Invalid credentials",
         )
 
     return {
         "message": "Login Successful",
-        "user_id": db_user.id
+        "user_id": db_user.id,
     }
 
 
-# ==========================
-# Forgot Password
-# ==========================
+# =========================================================
+# FORGOT PASSWORD
+# =========================================================
+
 @router.post("/forgot-password")
 def forgot_password(
     data: ForgotPasswordRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    # -----------------------------------------------------
+    # Validate email
+    # -----------------------------------------------------
 
-    user = db.query(User).filter(
-        User.email == data.email
-    ).first()
+    email = data.email.strip().lower()
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Email address is required",
+        )
+
+    # -----------------------------------------------------
+    # Find user
+    # -----------------------------------------------------
+
+    user = (
+        db.query(User)
+        .filter(User.email == email)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="Email not found"
+            detail="Email not found",
         )
+
+    # -----------------------------------------------------
+    # Generate 6-digit OTP
+    # -----------------------------------------------------
 
     otp = str(
         random.randint(
             100000,
-            999999
+            999999,
         )
     )
 
+    # -----------------------------------------------------
+    # Save OTP
+    # -----------------------------------------------------
+
     user.otp = otp
 
-    db.commit()
+    try:
+        db.commit()
 
-    send_otp_email(
-        data.email,
-        otp
-    )
+    except Exception as e:
+        db.rollback()
+
+        print(
+            "DATABASE ERROR WHILE SAVING OTP:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to generate verification code",
+        )
+
+    # -----------------------------------------------------
+    # Send OTP email
+    # -----------------------------------------------------
+
+    try:
+        send_otp_email(
+            email,
+            otp,
+        )
+
+    except Exception as e:
+
+        print(
+            "OTP EMAIL ERROR:",
+            repr(e),
+        )
+
+        # Remove OTP if email couldn't be sent
+        try:
+            user.otp = None
+            db.commit()
+        except Exception:
+            db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send OTP email. Please try again later.",
+        )
+
+    # -----------------------------------------------------
+    # Success
+    # -----------------------------------------------------
 
     return {
-        "message":
-        "OTP sent successfully"
+        "message": "OTP sent successfully",
     }
 
 
-# ==========================
-# Verify OTP + Reset Password
-# ==========================
+# =========================================================
+# VERIFY OTP + RESET PASSWORD
+# =========================================================
+
 @router.post("/verify-otp")
 def verify_otp(
     data: VerifyOTPRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    # -----------------------------------------------------
+    # Validate input
+    # -----------------------------------------------------
 
-    user = db.query(User).filter(
-        User.email == data.email
-    ).first()
+    email = data.email.strip().lower()
+    otp = str(data.otp).strip()
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Email address is required",
+        )
+
+    if not otp:
+        raise HTTPException(
+            status_code=400,
+            detail="OTP is required",
+        )
+
+    if not data.new_password:
+        raise HTTPException(
+            status_code=400,
+            detail="New password is required",
+        )
+
+    if len(data.new_password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must contain at least 8 characters",
+        )
+
+    # -----------------------------------------------------
+    # Find user
+    # -----------------------------------------------------
+
+    user = (
+        db.query(User)
+        .filter(User.email == email)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found"
+            detail="User not found",
         )
 
-    if user.otp != data.otp:
+    # -----------------------------------------------------
+    # Verify OTP
+    # -----------------------------------------------------
 
+    if not user.otp:
         raise HTTPException(
             status_code=400,
-            detail="Invalid OTP"
+            detail="No OTP found. Please request a new OTP.",
         )
 
-    # HASH PASSWORD BEFORE SAVING
-    user.password = hash_password(
-        data.new_password
-    )
+    if str(user.otp).strip() != otp:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid OTP",
+        )
 
-    user.otp = None
+    # -----------------------------------------------------
+    # Hash new password
+    # -----------------------------------------------------
 
-    db.commit()
+    try:
+        user.password = hash_password(
+            data.new_password
+        )
+
+        # Clear OTP after successful reset
+        user.otp = None
+
+        db.commit()
+
+    except Exception as e:
+
+        db.rollback()
+
+        print(
+            "PASSWORD RESET DATABASE ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to reset password",
+        )
+
+    # -----------------------------------------------------
+    # Success
+    # -----------------------------------------------------
 
     return {
-        "message":
-        "Password reset successful"
+        "message": "Password reset successful",
     }
-

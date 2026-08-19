@@ -12,26 +12,27 @@ class User(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
     name = Column(
         String,
-        nullable=False
+        nullable=False,
     )
 
     email = Column(
         String,
         unique=True,
-        nullable=False
+        index=True,
+        nullable=False,
     )
 
     password = Column(
         String,
-        nullable=False
+        nullable=False,
     )
 
     otp = Column(
         String,
-        nullable=True
+        nullable=True,
     )
