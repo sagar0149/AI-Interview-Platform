@@ -19,14 +19,14 @@ function ResetPassword() {
   const [loading, setLoading] =
     useState(false);
 
+  const [message, setMessage] =
+    useState("");
+
   const [showPassword, setShowPassword] =
     useState(false);
 
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
-
-  const [message, setMessage] =
-    useState("");
 
   const otpRefs = useRef([]);
 
@@ -44,41 +44,37 @@ function ResetPassword() {
     index,
     value
   ) => {
-    const digit =
-      value
-        .replace(/\D/g, "")
-        .slice(-1);
+    const digit = value
+      .replace(/\D/g, "")
+      .slice(-1);
 
-    if (!digit) {
+    if (!digit || rotating) {
       return;
     }
 
-    const otpArray =
-      otp
-        .padEnd(6, "")
-        .split("");
+    const otpArray = Array(6).fill("");
+
+    for (let i = 0; i < otp.length; i++) {
+      otpArray[i] = otp[i];
+    }
 
     otpArray[index] = digit;
 
     const newOtp =
-      otpArray
-        .join("")
-        .slice(0, 6);
+      otpArray.join("").slice(0, 6);
 
     setOtp(newOtp);
 
     setMessage("");
 
 
-    // Move to next OTP box
+    // Move to next box
 
     if (
       index < 5 &&
       otpRefs.current[index + 1]
     ) {
-      otpRefs.current[
-        index + 1
-      ].focus();
+      otpRefs.current[index + 1].focus();
     }
 
 
@@ -101,20 +97,17 @@ function ResetPassword() {
     event
   ) => {
 
-    if (
-      event.key === "Backspace"
-    ) {
+    if (rotating) {
+      return;
+    }
+
+    if (event.key === "Backspace") {
 
       if (otp[index]) {
 
         const newOtp =
-          otp.substring(
-            0,
-            index
-          ) +
-          otp.substring(
-            index + 1
-          );
+          otp.substring(0, index) +
+          otp.substring(index + 1);
 
         setOtp(newOtp);
 
@@ -155,12 +148,19 @@ function ResetPassword() {
       return;
     }
 
+
+    /*
+     * Start circular animation immediately.
+     */
+
+    setRotating(true);
+
+    setLoading(true);
+
+    setMessage("");
+
+
     try {
-
-      setLoading(true);
-
-      setMessage("");
-
 
       await axios.post(
         "/api/auth/verify-otp",
@@ -171,12 +171,10 @@ function ResetPassword() {
       );
 
 
-      // =================================================
-      // START ROTATION
-      // =================================================
-
-      setRotating(true);
-
+      /*
+       * Keep animation visible
+       * for a smooth effect.
+       */
 
       setTimeout(() => {
 
@@ -186,35 +184,48 @@ function ResetPassword() {
 
         setLoading(false);
 
-      }, 850);
+      }, 1600);
 
 
     } catch (error) {
 
-      console.error(error);
-
-      setMessage(
-        error.response?.data?.detail ||
-        "Invalid OTP. Please try again."
+      console.error(
+        "OTP verification error:",
+        error
       );
 
-      setLoading(false);
 
-      setOtp("");
-
+      /*
+       * Keep the circular animation
+       * for a short moment before
+       * showing the error.
+       */
 
       setTimeout(() => {
 
-        if (
-          otpRefs.current[0]
-        ) {
-          otpRefs.current[
-            0
-          ].focus();
-        }
+        setRotating(false);
 
-      }, 100);
+        setLoading(false);
 
+        setOtp("");
+
+        setMessage(
+          error.response?.data?.detail ||
+          "Invalid OTP. Please try again."
+        );
+
+
+        setTimeout(() => {
+
+          if (
+            otpRefs.current[0]
+          ) {
+            otpRefs.current[0].focus();
+          }
+
+        }, 100);
+
+      }, 1200);
     }
   };
 
@@ -308,7 +319,11 @@ function ResetPassword() {
 
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          "Password reset error:",
+          error
+        );
+
 
         setMessage(
           error.response?.data?.detail ||
@@ -323,16 +338,25 @@ function ResetPassword() {
   return (
     <div className="reset-page">
 
-      {/* Background */}
+      {/* =================================================
+          BACKGROUND
+      ================================================= */}
 
       <div className="background-glow glow-one"></div>
 
       <div className="background-glow glow-two"></div>
 
 
+      {/* =================================================
+          MAIN CONTAINER
+      ================================================= */}
+
       <main className="reset-container">
 
-        {/* Header */}
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
         <div className="component-label">
           AI INTERVIEW · ACCOUNT SECURITY
@@ -359,27 +383,23 @@ function ResetPassword() {
 
 
         {/* =================================================
-            CARD
+            MAIN CARD
         ================================================= */}
 
-        <div
-          className={`reset-card ${
-            rotating
-              ? "rotate-card"
-              : ""
-          }`}
-        >
+        <div className="reset-card">
 
 
           {/* =================================================
-              STEP 1 — OTP
+              STEP 1
+              OTP VERIFICATION
           ================================================= */}
 
           {step === 1 && (
 
             <div className="card-content">
 
-              {/* Brand */}
+
+              {/* BRAND */}
 
               <div className="brand-row">
 
@@ -396,7 +416,7 @@ function ResetPassword() {
               </div>
 
 
-              {/* Icon */}
+              {/* ICON */}
 
               <div className="step-icon">
                 ✉
@@ -416,6 +436,8 @@ function ResetPassword() {
               </p>
 
 
+              {/* EMAIL */}
+
               <div className="email-display">
 
                 {email ||
@@ -424,14 +446,20 @@ function ResetPassword() {
               </div>
 
 
-              {/* OTP */}
+              {/* =================================================
+                  OTP AREA
+              ================================================= */}
 
-              <div className="otp-section">
+              <div
+                className={`otp-orbit-container ${
+                  rotating
+                    ? "orbit-active"
+                    : ""
+                }`}
+              >
 
-                <label>
-                  Verification Code
-                </label>
 
+                {/* OTP BOXES */}
 
                 <div className="otp-boxes">
 
@@ -455,11 +483,12 @@ function ResetPassword() {
 
                         inputMode="numeric"
 
+                        autoComplete="one-time-code"
+
                         maxLength={1}
 
                         value={
-                          otp[index] ||
-                          ""
+                          otp[index] || ""
                         }
 
                         onChange={(event) =>
@@ -477,6 +506,10 @@ function ResetPassword() {
                           )
                         }
 
+                        disabled={
+                          rotating
+                        }
+
                         autoFocus={
                           index === 0
                         }
@@ -488,18 +521,45 @@ function ResetPassword() {
                 </div>
 
 
+                {/* =================================================
+                    CENTER VERIFYING
+                ================================================= */}
+
+                {rotating && (
+
+                  <div className="orbit-center">
+
+                    <div className="orbit-spinner"></div>
+
+                    <span>
+                      VERIFYING
+                    </span>
+
+                  </div>
+
+                )}
+
+              </div>
+
+
+              {/* OTP HINT */}
+
+              {!rotating && (
+
                 <p className="otp-hint">
 
                   Enter all 6 digits to continue
 
                 </p>
 
-              </div>
+              )}
 
 
-              {/* Loading */}
+              {/* =================================================
+                  LOADING
+              ================================================= */}
 
-              {loading && (
+              {loading && !rotating && (
 
                 <div className="verification-loading">
 
@@ -514,7 +574,9 @@ function ResetPassword() {
               )}
 
 
-              {/* Error */}
+              {/* =================================================
+                  ERROR MESSAGE
+              ================================================= */}
 
               {message && (
 
@@ -529,14 +591,18 @@ function ResetPassword() {
               )}
 
 
-              {/* Back */}
+              {/* BACK */}
 
-              <Link
-                to="/forgot-password"
-                className="back-link"
-              >
-                ← Request a new code
-              </Link>
+              {!rotating && (
+
+                <Link
+                  to="/forgot-password"
+                  className="back-link"
+                >
+                  ← Request a new code
+                </Link>
+
+              )}
 
             </div>
 
@@ -544,14 +610,16 @@ function ResetPassword() {
 
 
           {/* =================================================
-              STEP 2 — PASSWORD
+              STEP 2
+              CREATE NEW PASSWORD
           ================================================= */}
 
           {step === 2 && (
 
             <div className="card-content">
 
-              {/* Brand */}
+
+              {/* BRAND */}
 
               <div className="brand-row">
 
@@ -568,7 +636,7 @@ function ResetPassword() {
               </div>
 
 
-              {/* Success icon */}
+              {/* SUCCESS ICON */}
 
               <div className="step-icon success-icon">
 
@@ -590,7 +658,9 @@ function ResetPassword() {
               </p>
 
 
-              {/* New Password */}
+              {/* =================================================
+                  NEW PASSWORD
+              ================================================= */}
 
               <div className="input-group">
 
@@ -615,13 +685,14 @@ function ResetPassword() {
 
                     placeholder="Enter new password"
 
-                    value={newPassword}
+                    value={
+                      newPassword
+                    }
 
                     onChange={(event) => {
 
                       setNewPassword(
-                        event.target
-                          .value
+                        event.target.value
                       );
 
                       setMessage("");
@@ -653,7 +724,9 @@ function ResetPassword() {
               </div>
 
 
-              {/* Confirm Password */}
+              {/* =================================================
+                  CONFIRM PASSWORD
+              ================================================= */}
 
               <div className="input-group">
 
@@ -685,8 +758,7 @@ function ResetPassword() {
                     onChange={(event) => {
 
                       setConfirmPassword(
-                        event.target
-                          .value
+                        event.target.value
                       );
 
                       setMessage("");
@@ -718,7 +790,9 @@ function ResetPassword() {
               </div>
 
 
-              {/* Reset */}
+              {/* =================================================
+                  RESET BUTTON
+              ================================================= */}
 
               <button
                 className="reset-button"
@@ -727,7 +801,9 @@ function ResetPassword() {
                   resetPassword
                 }
 
-                disabled={loading}
+                disabled={
+                  loading
+                }
               >
 
                 {loading
@@ -736,15 +812,17 @@ function ResetPassword() {
 
 
                 {!loading && (
+
                   <span>
                     →
                   </span>
+
                 )}
 
               </button>
 
 
-              {/* Message */}
+              {/* MESSAGE */}
 
               {message && (
 
@@ -765,7 +843,9 @@ function ResetPassword() {
         </div>
 
 
-        {/* Footer */}
+        {/* =================================================
+            FOOTER
+        ================================================= */}
 
         <div className="footer-text">
 
@@ -786,34 +866,35 @@ function ResetPassword() {
           box-sizing: border-box;
         }
 
+
         html,
         body,
         #root {
           margin: 0;
           padding: 0;
+
           width: 100%;
           min-height: 100%;
         }
+
 
         body {
           background: #020707;
         }
 
 
-        /* ================================================
+        /* =====================================================
            PAGE
-        ================================================ */
+        ===================================================== */
 
         .reset-page {
 
           min-height: 100vh;
-
           width: 100%;
 
           display: flex;
 
           align-items: center;
-
           justify-content: center;
 
           position: relative;
@@ -840,6 +921,7 @@ function ResetPassword() {
               ),
               transparent 35%
             ),
+
             linear-gradient(
               180deg,
               #020708 0%,
@@ -849,9 +931,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
-           GLOW
-        ================================================ */
+        /* =====================================================
+           BACKGROUND GLOW
+        ===================================================== */
 
         .background-glow {
 
@@ -866,6 +948,7 @@ function ResetPassword() {
           pointer-events: none;
         }
 
+
         .glow-one {
 
           width: 400px;
@@ -874,9 +957,9 @@ function ResetPassword() {
           background: #00e5d0;
 
           left: -180px;
-
           top: 25%;
         }
+
 
         .glow-two {
 
@@ -886,14 +969,13 @@ function ResetPassword() {
           background: #008d85;
 
           right: -150px;
-
           bottom: -100px;
         }
 
 
-        /* ================================================
+        /* =====================================================
            CONTAINER
-        ================================================ */
+        ===================================================== */
 
         .reset-container {
 
@@ -902,8 +984,7 @@ function ResetPassword() {
           max-width: 510px;
 
           padding:
-            50px
-            20px;
+            50px 20px;
 
           position: relative;
 
@@ -913,9 +994,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
+        /* =====================================================
            HEADER
-        ================================================ */
+        ===================================================== */
 
         .component-label {
 
@@ -958,21 +1039,19 @@ function ResetPassword() {
 
           text-shadow:
             0 0 20px
-              rgba(
-                25,
-                214,
-                202,
-                0.2
-              );
+            rgba(
+              25,
+              214,
+              202,
+              0.2
+            );
         }
 
 
         .main-subtitle {
 
           margin:
-            17px
-            auto
-            28px;
+            17px auto 28px;
 
           max-width: 390px;
 
@@ -984,9 +1063,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
-           CARD
-        ================================================ */
+        /* =====================================================
+           MAIN CARD
+        ===================================================== */
 
         .reset-card {
 
@@ -997,8 +1076,7 @@ function ResetPassword() {
           position: relative;
 
           padding:
-            32px
-            35px;
+            32px 35px;
 
           border-radius: 24px;
 
@@ -1021,21 +1099,22 @@ function ResetPassword() {
 
           border:
             1px solid
-              rgba(
-                165,
-                205,
-                200,
-                0.13
-              );
+            rgba(
+              165,
+              205,
+              200,
+              0.13
+            );
 
           box-shadow:
             0 35px 80px
-              rgba(
-                0,
-                0,
-                0,
-                0.46
-              ),
+            rgba(
+              0,
+              0,
+              0,
+              0.46
+            ),
+
             inset
             0 1px 0
             rgba(
@@ -1047,73 +1126,12 @@ function ResetPassword() {
 
           backdrop-filter:
             blur(18px);
-
-          perspective: 1200px;
         }
 
 
-        /* ================================================
-           3D ROTATION
-        ================================================ */
-
-        .reset-card.rotate-card {
-
-          animation:
-            card-rotate
-            0.85s
-            cubic-bezier(
-              0.68,
-              -0.2,
-              0.25,
-              1.2
-            );
-        }
-
-
-        @keyframes card-rotate {
-
-          0% {
-
-            transform:
-              perspective(1200px)
-              rotateY(0deg)
-              scale(1);
-
-          }
-
-          35% {
-
-            transform:
-              perspective(1200px)
-              rotateY(90deg)
-              scale(0.94);
-
-          }
-
-          60% {
-
-            transform:
-              perspective(1200px)
-              rotateY(180deg)
-              scale(0.94);
-
-          }
-
-          100% {
-
-            transform:
-              perspective(1200px)
-              rotateY(360deg)
-              scale(1);
-
-          }
-
-        }
-
-
-        /* ================================================
+        /* =====================================================
            CARD CONTENT
-        ================================================ */
+        ===================================================== */
 
         .card-content {
 
@@ -1123,7 +1141,7 @@ function ResetPassword() {
 
           animation:
             content-fade
-            0.45s
+            0.4s
             ease;
         }
 
@@ -1137,7 +1155,6 @@ function ResetPassword() {
             transform:
               translateY(12px)
               scale(0.98);
-
           }
 
           to {
@@ -1147,15 +1164,13 @@ function ResetPassword() {
             transform:
               translateY(0)
               scale(1);
-
           }
-
         }
 
 
-        /* ================================================
+        /* =====================================================
            BRAND
-        ================================================ */
+        ===================================================== */
 
         .brand-row {
 
@@ -1178,7 +1193,6 @@ function ResetPassword() {
         .brand-orb {
 
           width: 25px;
-
           height: 25px;
 
           display: flex;
@@ -1189,25 +1203,24 @@ function ResetPassword() {
 
           border:
             2px solid
-              #16d8cb;
+            #16d8cb;
 
           border-radius: 50%;
 
           box-shadow:
             0 0 11px
-              rgba(
-                22,
-                216,
-                203,
-                0.32
-              );
+            rgba(
+              22,
+              216,
+              203,
+              0.32
+            );
         }
 
 
         .orb-dot {
 
           width: 7px;
-
           height: 7px;
 
           border-radius: 50%;
@@ -1216,24 +1229,22 @@ function ResetPassword() {
 
           box-shadow:
             0 0 9px
-              #17d9cc;
+            #17d9cc;
         }
 
 
-        /* ================================================
+        /* =====================================================
            ICON
-        ================================================ */
+        ===================================================== */
 
         .step-icon {
 
           width: 46px;
-
           height: 46px;
 
           display: flex;
 
           align-items: center;
-
           justify-content: center;
 
           margin-bottom: 15px;
@@ -1250,12 +1261,12 @@ function ResetPassword() {
 
           border:
             1px solid
-              rgba(
-                25,
-                214,
-                202,
-                0.2
-              );
+            rgba(
+              25,
+              214,
+              202,
+              0.2
+            );
 
           color: #1bd6ca;
 
@@ -1267,29 +1278,28 @@ function ResetPassword() {
 
           color: #021c19;
 
-          background: #19d6ca;
+          background:
+            #19d6ca;
 
           box-shadow:
             0 0 20px
-              rgba(
-                25,
-                214,
-                202,
-                0.2
-              );
+            rgba(
+              25,
+              214,
+              202,
+              0.2
+            );
         }
 
 
-        /* ================================================
+        /* =====================================================
            TEXT
-        ================================================ */
+        ===================================================== */
 
         .card-content h2 {
 
           margin:
-            0
-            0
-            6px;
+            0 0 6px;
 
           color: #e8f0ee;
 
@@ -1302,9 +1312,7 @@ function ResetPassword() {
         .description {
 
           margin:
-            0
-            0
-            10px;
+            0 0 10px;
 
           color: #758582;
 
@@ -1317,9 +1325,7 @@ function ResetPassword() {
         .email-display {
 
           margin:
-            0
-            0
-            23px;
+            0 0 20px;
 
           color: #1acbc1;
 
@@ -1333,33 +1339,31 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
-           OTP
-        ================================================ */
+        /* =====================================================
+           OTP CONTAINER
+        ===================================================== */
 
-        .otp-section {
+        .otp-orbit-container {
 
           width: 100%;
 
-          margin-bottom: 18px;
+          height: 125px;
+
+          position: relative;
+
+          display: flex;
+
+          align-items: center;
+
+          justify-content: center;
+
+          perspective: 900px;
         }
 
 
-        .otp-section label {
-
-          display: block;
-
-          margin-bottom: 10px;
-
-          color: #a4b1af;
-
-          font-size: 13px;
-
-          font-weight: 600;
-
-          text-align: center;
-        }
-
+        /* =====================================================
+           NORMAL OTP LINE
+        ===================================================== */
 
         .otp-boxes {
 
@@ -1370,8 +1374,16 @@ function ResetPassword() {
           justify-content: center;
 
           gap: 9px;
+
+          position: relative;
+
+          z-index: 5;
         }
 
+
+        /* =====================================================
+           OTP INPUT
+        ===================================================== */
 
         .otp-input {
 
@@ -1383,12 +1395,12 @@ function ResetPassword() {
 
           border:
             1px solid
-              rgba(
-                32,
-                170,
-                160,
-                0.65
-              );
+            rgba(
+              32,
+              170,
+              160,
+              0.65
+            );
 
           background:
             rgba(
@@ -1411,8 +1423,10 @@ function ResetPassword() {
           transition:
             transform
               0.15s ease,
+
             border-color
               0.2s ease,
+
             box-shadow
               0.2s ease;
         }
@@ -1420,7 +1434,8 @@ function ResetPassword() {
 
         .otp-input:focus {
 
-          border-color: #19d6ca;
+          border-color:
+            #19d6ca;
 
           transform:
             translateY(-2px)
@@ -1428,28 +1443,427 @@ function ResetPassword() {
 
           box-shadow:
             0 0 0 3px
-              rgba(
-                25,
-                214,
-                202,
-                0.08
-              ),
+            rgba(
+              25,
+              214,
+              202,
+              0.08
+            ),
+
             0 0 18px
-              rgba(
-                25,
-                214,
-                202,
-                0.12
-              );
+            rgba(
+              25,
+              214,
+              202,
+              0.12
+            );
         }
 
+
+        /* =====================================================
+           CIRCULAR ORBIT MODE
+        ===================================================== */
+
+        .orbit-active .otp-boxes {
+
+          width: 150px;
+
+          height: 150px;
+
+          position: absolute;
+
+          left: 50%;
+
+          top: 50%;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
+          display: block;
+        }
+
+
+        /* =====================================================
+           INDIVIDUAL OTP BOX
+        ===================================================== */
+
+        .orbit-active .otp-input {
+
+          position: absolute;
+
+          left: 50%;
+
+          top: 50%;
+
+          margin: 0;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
+          animation:
+            otp-orbit
+            1.6s
+            cubic-bezier(
+              0.4,
+              0,
+              0.2,
+              1
+            )
+            forwards;
+
+          box-shadow:
+            0 0 15px
+            rgba(
+              25,
+              214,
+              202,
+              0.18
+            );
+        }
+
+
+        /* =====================================================
+           SIX ORBIT POSITIONS
+        ===================================================== */
+
+        .orbit-active
+        .otp-input:nth-child(1) {
+
+          --start-angle: 0deg;
+        }
+
+
+        .orbit-active
+        .otp-input:nth-child(2) {
+
+          --start-angle: 60deg;
+        }
+
+
+        .orbit-active
+        .otp-input:nth-child(3) {
+
+          --start-angle: 120deg;
+        }
+
+
+        .orbit-active
+        .otp-input:nth-child(4) {
+
+          --start-angle: 180deg;
+        }
+
+
+        .orbit-active
+        .otp-input:nth-child(5) {
+
+          --start-angle: 240deg;
+        }
+
+
+        .orbit-active
+        .otp-input:nth-child(6) {
+
+          --start-angle: 300deg;
+        }
+
+
+        /* =====================================================
+           ORBIT ANIMATION
+        ===================================================== */
+
+        @keyframes otp-orbit {
+
+          0% {
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              rotate(
+                0deg
+              )
+              translateX(0)
+              rotate(0deg)
+              scale(1);
+
+            opacity: 1;
+          }
+
+
+          15% {
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              rotate(
+                var(--start-angle)
+              )
+              translateX(0)
+              rotate(
+                calc(
+                  var(--start-angle) * -1
+                )
+              )
+              scale(0.95);
+
+            opacity: 1;
+          }
+
+
+          50% {
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              rotate(
+                calc(
+                  var(--start-angle) + 180deg
+                )
+              )
+              translateX(58px)
+              rotate(
+                calc(
+                  (
+                    var(--start-angle) + 180deg
+                  ) * -1
+                )
+              )
+              scale(0.82);
+
+            opacity: 1;
+          }
+
+
+          80% {
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              rotate(
+                calc(
+                  var(--start-angle) + 300deg
+                )
+              )
+              translateX(58px)
+              rotate(
+                calc(
+                  (
+                    var(--start-angle) + 300deg
+                  ) * -1
+                )
+              )
+              scale(0.78);
+
+            opacity: 0.85;
+          }
+
+
+          100% {
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              rotate(
+                calc(
+                  var(--start-angle) + 360deg
+                )
+              )
+              translateX(58px)
+              rotate(
+                calc(
+                  (
+                    var(--start-angle) + 360deg
+                  ) * -1
+                )
+              )
+              scale(0.72);
+
+            opacity: 0;
+          }
+        }
+
+
+        /* =====================================================
+           CENTER VERIFYING CIRCLE
+        ===================================================== */
+
+        .orbit-center {
+
+          position: absolute;
+
+          left: 50%;
+
+          top: 50%;
+
+          transform:
+            translate(
+              -50%,
+              -50%
+            );
+
+          z-index: 10;
+
+          width: 72px;
+
+          height: 72px;
+
+          border-radius: 50%;
+
+          display: flex;
+
+          flex-direction: column;
+
+          align-items: center;
+
+          justify-content: center;
+
+          gap: 5px;
+
+          background:
+            rgba(
+              3,
+              20,
+              20,
+              0.96
+            );
+
+          border:
+            1px solid
+            rgba(
+              25,
+              214,
+              202,
+              0.4
+            );
+
+          box-shadow:
+            0 0 30px
+            rgba(
+              25,
+              214,
+              202,
+              0.2
+            );
+
+          animation:
+            center-appear
+            0.25s
+            ease;
+        }
+
+
+        @keyframes center-appear {
+
+          from {
+
+            opacity: 0;
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              scale(0.5);
+          }
+
+          to {
+
+            opacity: 1;
+
+            transform:
+              translate(
+                -50%,
+                -50%
+              )
+              scale(1);
+          }
+        }
+
+
+        /* =====================================================
+           CENTER SPINNER
+        ===================================================== */
+
+        .orbit-spinner {
+
+          width: 22px;
+
+          height: 22px;
+
+          border:
+            2px solid
+            rgba(
+              25,
+              214,
+              202,
+              0.2
+            );
+
+          border-top-color:
+            #19d6ca;
+
+          border-right-color:
+            #19d6ca;
+
+          border-radius: 50%;
+
+          animation:
+            orbit-loading
+            0.6s
+            linear
+            infinite;
+        }
+
+
+        @keyframes orbit-loading {
+
+          to {
+
+            transform:
+              rotate(
+                360deg
+              );
+          }
+        }
+
+
+        .orbit-center span {
+
+          color:
+            #19d6ca;
+
+          font-size: 7px;
+
+          font-weight: 800;
+
+          letter-spacing: 1px;
+        }
+
+
+        /* =====================================================
+           OTP HINT
+        ===================================================== */
 
         .otp-hint {
 
           margin:
-            11px
-            0
-            0;
+            5px 0 0;
 
           color: #61716e;
 
@@ -1459,9 +1873,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
-           LOADING
-        ================================================ */
+        /* =====================================================
+           VERIFICATION LOADING
+        ===================================================== */
 
         .verification-loading {
 
@@ -1489,12 +1903,12 @@ function ResetPassword() {
 
           border:
             2px solid
-              rgba(
-                25,
-                214,
-                202,
-                0.2
-              );
+            rgba(
+              25,
+              214,
+              202,
+              0.2
+            );
 
           border-top-color:
             #19d6ca;
@@ -1514,16 +1928,16 @@ function ResetPassword() {
           to {
 
             transform:
-              rotate(360deg);
-
+              rotate(
+                360deg
+              );
           }
-
         }
 
 
-        /* ================================================
-           INPUT
-        ================================================ */
+        /* =====================================================
+           PASSWORD INPUT
+        ===================================================== */
 
         .input-group {
 
@@ -1558,8 +1972,7 @@ function ResetPassword() {
           gap: 11px;
 
           padding:
-            0
-            14px;
+            0 14px;
 
           border-radius: 14px;
 
@@ -1573,12 +1986,19 @@ function ResetPassword() {
 
           border:
             1px solid
-              rgba(
-                32,
-                170,
-                160,
-                0.6
-              );
+            rgba(
+              32,
+              170,
+              160,
+              0.6
+            );
+
+          transition:
+            border-color
+              0.2s ease,
+
+            box-shadow
+              0.2s ease;
         }
 
 
@@ -1589,12 +2009,12 @@ function ResetPassword() {
 
           box-shadow:
             0 0 0 3px
-              rgba(
-                25,
-                214,
-                202,
-                0.07
-              );
+            rgba(
+              25,
+              214,
+              202,
+              0.07
+            );
         }
 
 
@@ -1620,7 +2040,8 @@ function ResetPassword() {
 
           outline: none;
 
-          background: transparent;
+          background:
+            transparent;
 
           color: #e7f1ef;
 
@@ -1638,7 +2059,8 @@ function ResetPassword() {
 
           border: none;
 
-          background: transparent;
+          background:
+            transparent;
 
           color: #6e807d;
 
@@ -1654,9 +2076,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
+        /* =====================================================
            RESET BUTTON
-        ================================================ */
+        ===================================================== */
 
         .reset-button {
 
@@ -1696,6 +2118,7 @@ function ResetPassword() {
           transition:
             transform
               0.2s ease,
+
             filter
               0.2s ease;
         }
@@ -1719,9 +2142,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
+        /* =====================================================
            MESSAGE
-        ================================================ */
+        ===================================================== */
 
         .message {
 
@@ -1736,8 +2159,7 @@ function ResetPassword() {
           margin-top: 15px;
 
           padding:
-            9px
-            11px;
+            9px 11px;
 
           border-radius: 9px;
 
@@ -1788,18 +2210,16 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
+        /* =====================================================
            BACK LINK
-        ================================================ */
+        ===================================================== */
 
         .back-link {
 
           display: block;
 
           margin:
-            23px
-            auto
-            0;
+            23px auto 0;
 
           color: #19cfc4;
 
@@ -1817,9 +2237,9 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
+        /* =====================================================
            FOOTER
-        ================================================ */
+        ===================================================== */
 
         .footer-text {
 
@@ -1833,17 +2253,16 @@ function ResetPassword() {
         }
 
 
-        /* ================================================
+        /* =====================================================
            MOBILE
-        ================================================ */
+        ===================================================== */
 
         @media (max-width: 600px) {
 
           .reset-container {
 
             padding:
-              35px
-              15px;
+              35px 15px;
           }
 
 
@@ -1856,8 +2275,17 @@ function ResetPassword() {
           .reset-card {
 
             padding:
-              28px
-              20px;
+              28px 20px;
+          }
+
+
+          .otp-input {
+
+            width: 43px;
+
+            height: 53px;
+
+            font-size: 19px;
           }
 
 
@@ -1867,11 +2295,12 @@ function ResetPassword() {
           }
 
 
-          .otp-input {
+          .orbit-active
+          .otp-boxes {
 
-            width: 43px;
+            width: 140px;
 
-            height: 53px;
+            height: 140px;
           }
 
         }
@@ -1892,8 +2321,13 @@ function ResetPassword() {
           .reset-card {
 
             padding:
-              24px
-              16px;
+              24px 16px;
+          }
+
+
+          .otp-boxes {
+
+            gap: 4px;
           }
 
         }
