@@ -1,10 +1,10 @@
-
 import {
   BrowserRouter,
   Routes,
   Route,
 } from "react-router-dom";
 
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -25,9 +25,21 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Authentication */}
+        {/* =========================================
+            HOME PAGE
+        ========================================= */}
+
         <Route
           path="/"
+          element={<Home />}
+        />
+
+        {/* =========================================
+            AUTHENTICATION
+        ========================================= */}
+
+        <Route
+          path="/login"
           element={<Login />}
         />
 
@@ -46,70 +58,91 @@ function App() {
           element={<ResetPassword />}
         />
 
-        {/* Dashboard */}
+        {/* =========================================
+            DASHBOARD
+        ========================================= */}
+
         <Route
           path="/dashboard"
           element={<Dashboard />}
         />
 
-        {/* Profile */}
+        {/* =========================================
+            PROFILE
+        ========================================= */}
+
         <Route
           path="/profile"
           element={<Profile />}
         />
 
-        {/* Resume Builder */}
+        {/* =========================================
+            RESUME
+        ========================================= */}
+
         <Route
           path="/resume-builder"
           element={<ResumeBuilder />}
         />
 
-        {/* Resume Analyzer */}
         <Route
           path="/resume"
           element={<ResumeUpload />}
         />
 
-        {/* Mock Interview */}
+        {/* =========================================
+            INTERVIEWS
+        ========================================= */}
+
         <Route
           path="/interview"
           element={<Interview />}
         />
 
-        {/* Voice Interview */}
         <Route
           path="/voice-interview"
           element={<VoiceInterview />}
         />
 
-        {/* Video Interview */}
         <Route
           path="/video-interview"
           element={<VideoInterview />}
         />
 
-        {/* History */}
+        {/* =========================================
+            HISTORY
+        ========================================= */}
+
         <Route
           path="/history"
           element={<History />}
         />
 
-        {/* Analytics */}
+        {/* =========================================
+            ANALYTICS
+        ========================================= */}
+
         <Route
           path="/analytics"
           element={<Analytics />}
         />
 
-        {/* Reports */}
+        {/* =========================================
+            REPORTS
+        ========================================= */}
+
         <Route
           path="/reports"
           element={<Reports />}
         />
 
-        {/* Fallback */}
+        {/* =========================================
+            FALLBACK
+        ========================================= */}
+
         <Route
           path="*"
-          element={<Login />}
+          element={<Home />}
         />
 
       </Routes>
