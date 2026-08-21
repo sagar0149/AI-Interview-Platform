@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import AILoader from "../components/AILoader";
+
 import {
   FaCloudUploadAlt,
   FaFilePdf,
@@ -11,6 +12,8 @@ import {
   FaGraduationCap,
   FaTimes,
   FaFileAlt,
+  FaMagic,
+  FaArrowRight,
 } from "react-icons/fa";
 
 function ResumeUpload() {
@@ -22,15 +25,27 @@ function ResumeUpload() {
 
   const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
+
     if (!selectedFile) return;
 
+    if (selectedFile.type !== "application/pdf") {
+      alert("Please upload a PDF file only.");
+      return;
+    }
+
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB.");
+      return;
+    }
+
     setFile(selectedFile);
+
     const formData = new FormData();
     formData.append("file", selectedFile);
 
     try {
       setLoading(true);
-      setAnalysis(null); // Clear previous analysis
+      setAnalysis(null);
 
       const response = await axios.post(
         "/api/resume/upload",
@@ -46,279 +61,2618 @@ function ResumeUpload() {
 
       if (response.data.success && response.data.analysis) {
         setAnalysis(response.data.analysis);
-        
-        // Save generated questions for the Mock Interview page
+
         localStorage.setItem(
           "interviewQuestions",
           JSON.stringify(response.data.questions || [])
         );
-        console.log("Saved Questions:", response.data.questions);
+
+        console.log(
+          "Saved Questions:",
+          response.data.questions
+        );
       } else {
-        console.log("Backend Error:", response.data);
-        alert(response.data.message || "Resume analysis failed");
+        console.log(
+          "Backend Error:",
+          response.data
+        );
+
+        alert(
+          response.data.message ||
+          "Resume analysis failed"
+        );
       }
     } catch (error) {
       console.error(error);
-      alert("Resume analysis failed. Please check your backend connection.");
+
+      alert(
+        error.response?.data?.detail ||
+        "Resume analysis failed. Please check your backend connection."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper function to get dynamic color for ATS score
   const getScoreColor = (score) => {
-    if (score >= 80) return "#22c55e"; // Green
-    if (score >= 60) return "#f59e0b"; // Yellow
-    return "#ef4444"; // Red
+    if (score >= 80) return "#22c55e";
+    if (score >= 60) return "#f59e0b";
+    return "#ef4444";
+  };
+
+  const getScoreMessage = (score) => {
+    if (score >= 80) {
+      return "Excellent! Your resume is highly optimized.";
+    }
+
+    if (score >= 60) {
+      return "Good score, but there is room for improvement.";
+    }
+
+    return "Your resume needs significant improvement.";
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e3a8a 100%)",
-        color: "white",
-        fontFamily: "'Inter', sans-serif",
-        display: "flex",
-      }}
-    >
+    <div className="resume-page">
+
+      {/* ================================
+          ANIMATED BACKGROUND
+      ================================= */}
+
+      <div className="background-animation">
+        <div className="glow glow-one"></div>
+        <div className="glow glow-two"></div>
+        <div className="glow glow-three"></div>
+
+        {[...Array(35)].map((_, index) => (
+          <span
+            key={index}
+            className="particle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${6 + Math.random() * 8}s`,
+            }}
+          />
+        ))}
+      </div>
+
       <Sidebar />
 
-      <div
-        style={{
-          marginLeft: "260px",
-          padding: "40px 60px",
-          width: "100%",
-          boxSizing: "border-box",
-          maxWidth: "1400px",
-        }}
-      >
-        {/* Loading Overlay */}
+      {/* ================================
+          MAIN CONTENT
+      ================================= */}
+
+      <div className="main-content">
+
+        {/* ================================
+            LOADING OVERLAY
+        ================================= */}
+
         {loading && (
-          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(15, 23, 42, 0.8)", backdropFilter: "blur(5px)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <AILoader text="Analyzing Resume & Generating Custom Questions..." />
+          <div className="loading-overlay">
+            <div className="loader-container">
+              <AILoader
+                text="Analyzing Resume & Generating Custom Questions..."
+              />
+            </div>
           </div>
         )}
 
-        {/* Header */}
-        <div style={{ marginBottom: "40px" }}>
-          <h1 style={{ fontSize: "42px", fontWeight: "900", margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: "15px" }}>
-            <div style={{ padding: "12px", background: "rgba(59, 130, 246, 0.1)", borderRadius: "16px", color: "#60a5fa", display: "flex" }}>
-              <FaFileAlt size={30} />
+        {/* ================================
+            HEADER
+        ================================= */}
+
+        <div className="page-header fade-up">
+
+          <div>
+
+            <div className="title-wrapper">
+
+              <div className="title-icon">
+                <FaFileAlt size={30} />
+              </div>
+
+              <div>
+                <h1>
+                  Resume Analyzer
+                </h1>
+
+                <div className="title-line"></div>
+              </div>
+
             </div>
-            Resume Analyzer
-          </h1>
-          <p style={{ color: "#94a3b8", fontSize: "16px", margin: 0 }}>
-            Upload your resume to get an ATS score, deep AI feedback, and generate custom interview questions.
-          </p>
+
+            <p>
+              Upload your resume to get an ATS score,
+              deep AI feedback, and personalized
+              interview questions.
+            </p>
+
+          </div>
+
         </div>
 
-        {/* Upload Zone */}
+        {/* ================================
+            UPLOAD SECTION
+        ================================= */}
+
         {!analysis && (
+
           <label
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              background: isHovering ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
-              border: isHovering ? "2px dashed rgba(96, 165, 250, 0.6)" : "2px dashed rgba(255,255,255,0.2)",
-              borderRadius: "24px",
-              padding: "60px",
-              textAlign: "center",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              boxShadow: isHovering ? "0 0 30px rgba(96, 165, 250, 0.1)" : "none",
-              marginBottom: "40px",
-            }}
+            className={`upload-zone ${
+              isHovering ? "upload-hover" : ""
+            } fade-up`}
+
+            onMouseEnter={() =>
+              setIsHovering(true)
+            }
+
+            onMouseLeave={() =>
+              setIsHovering(false)
+            }
           >
-            <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: "20px", borderRadius: "50%", marginBottom: "20px", color: "#60a5fa" }}>
-              <FaCloudUploadAlt size={50} />
+
+            <div className="upload-glow"></div>
+
+            <div className="upload-icon">
+
+              <FaCloudUploadAlt size={55} />
+
             </div>
-            <h2 style={{ fontSize: "24px", margin: "0 0 10px 0", color: isHovering ? "#60a5fa" : "white", transition: "color 0.3s" }}>
-              Click to Upload Resume
+
+            <h2>
+              {isHovering
+                ? "Drop Your Resume Here"
+                : "Upload Your Resume"}
             </h2>
-            <p style={{ color: "#94a3b8", margin: 0, fontSize: "15px" }}>Supports PDF files only (Max 5MB)</p>
+
+            <p>
+              Click anywhere to select your resume
+            </p>
+
+            <span className="upload-format">
+              PDF files only • Maximum 5MB
+            </span>
+
+            <div className="upload-button">
+
+              <FaCloudUploadAlt />
+
+              Choose PDF
+
+            </div>
+
             <input
               type="file"
               accept=".pdf"
               onChange={handleFileChange}
               hidden
             />
+
           </label>
+
         )}
 
-        {/* Results Grid */}
-        {!loading && file && analysis && (
-          <div style={{ display: "grid", gridTemplateColumns: "350px 1fr", gap: "30px", alignItems: "start" }}>
-            
-            {/* LEFT COLUMN: File Info & ATS Score */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "25px", position: "sticky", top: "40px" }}>
-              
-              {/* ATS Score Card */}
-              <div style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "35px 25px", textAlign: "center", boxShadow: "0 10px 30px -10px rgba(0,0,0,0.5)" }}>
-                <h2 style={{ margin: "0 0 25px 0", fontSize: "20px", color: "#e2e8f0" }}>Overall ATS Score</h2>
-                
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <div style={{ width: "160px", height: "160px", borderRadius: "50%", background: `conic-gradient(${getScoreColor(analysis.ats_score)} ${analysis.ats_score}%, rgba(255,255,255,0.05) ${analysis.ats_score}%)`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: `0 0 40px ${getScoreColor(analysis.ats_score)}40` }}>
-                    {/* Inner cutout to make it a ring */}
-                    <div style={{ width: "135px", height: "135px", borderRadius: "50%", background: "#0f172a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: "42px", fontWeight: "900", color: "white", lineHeight: "1" }}>
-                        {analysis.ats_score || 0}<span style={{ fontSize: "24px", color: "#94a3b8" }}>%</span>
-                      </span>
+        {/* ================================
+            RESULTS
+        ================================= */}
+
+        {!loading &&
+          file &&
+          analysis && (
+
+            <div className="results-layout">
+
+              {/* ================================
+                  LEFT COLUMN
+              ================================= */}
+
+              <div className="left-column">
+
+                {/* ATS SCORE */}
+
+                <div className="glass-card score-card fade-up">
+
+                  <div className="card-top-line"></div>
+
+                  <div className="card-heading">
+                    <FaMagic />
+                    <span>
+                      ATS Performance
+                    </span>
+                  </div>
+
+                  <h2>
+                    Overall ATS Score
+                  </h2>
+
+                  <div className="score-wrapper">
+
+                    <div
+                      className="score-ring"
+                      style={{
+                        background:
+                          `conic-gradient(
+                            ${getScoreColor(
+                              analysis.ats_score
+                            )}
+                            ${analysis.ats_score}%,
+                            rgba(255,255,255,0.06)
+                            ${analysis.ats_score}%
+                          )`,
+                        boxShadow:
+                          `0 0 50px
+                          ${getScoreColor(
+                            analysis.ats_score
+                          )}45`,
+                      }}
+                    >
+
+                      <div className="score-inner">
+
+                        <span className="score-number">
+                          {analysis.ats_score || 0}
+                        </span>
+
+                        <span className="score-percent">
+                          %
+                        </span>
+
+                        <span className="score-label">
+                          ATS SCORE
+                        </span>
+
+                      </div>
+
                     </div>
-                  </div>
-                </div>
-                <p style={{ marginTop: "20px", color: "#94a3b8", fontSize: "14px" }}>
-                  {analysis.ats_score >= 80 ? "Excellent! Your resume is highly optimized." : analysis.ats_score >= 60 ? "Good, but there is room for improvement." : "Needs significant improvement to pass ATS."}
-                </p>
-              </div>
 
-              {/* Uploaded File Card */}
-              <div style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "25px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "20px" }}>
-                  <div style={{ background: "rgba(239, 68, 68, 0.1)", padding: "12px", borderRadius: "12px", color: "#ef4444" }}>
-                    <FaFilePdf size={28} />
                   </div>
-                  <div style={{ overflow: "hidden" }}>
-                    <h3 style={{ margin: "0 0 5px 0", fontSize: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</h3>
-                    <p style={{ margin: 0, color: "#94a3b8", fontSize: "13px" }}>{(file.size / 1024).toFixed(2)} KB</p>
-                  </div>
+
+                  <p className="score-message">
+                    {getScoreMessage(
+                      analysis.ats_score
+                    )}
+                  </p>
+
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <button
-                    onClick={() => setShowResume(true)}
-                    style={{ width: "100%", padding: "14px", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "12px", background: "transparent", color: "white", fontWeight: "600", cursor: "pointer", transition: "all 0.2s" }}
-                    onMouseEnter={(e) => (e.target.style.background = "rgba(255,255,255,0.05)")}
-                    onMouseLeave={(e) => (e.target.style.background = "transparent")}
-                  >
-                    View PDF Document
-                  </button>
-                  <label style={{ width: "100%", padding: "14px", border: "none", borderRadius: "12px", background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "white", fontWeight: "600", cursor: "pointer", textAlign: "center", boxSizing: "border-box", transition: "transform 0.2s" }} onMouseEnter={(e) => (e.target.style.transform = "translateY(-2px)")} onMouseLeave={(e) => (e.target.style.transform = "translateY(0)")}>
-                    Upload New Resume
-                    <input type="file" accept=".pdf" onChange={handleFileChange} hidden />
-                  </label>
+                {/* FILE CARD */}
+
+                <div className="glass-card file-card fade-up">
+
+                  <div className="file-header">
+
+                    <div className="pdf-icon">
+                      <FaFilePdf size={28} />
+                    </div>
+
+                    <div className="file-details">
+
+                      <h3>
+                        {file.name}
+                      </h3>
+
+                      <p>
+                        {(file.size / 1024).toFixed(2)}
+                        {" "}KB
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="file-actions">
+
+                    <button
+                      className="secondary-button"
+                      onClick={() =>
+                        setShowResume(true)
+                      }
+                    >
+                      <FaFilePdf />
+                      View PDF
+                    </button>
+
+                    <label className="primary-button">
+
+                      <FaCloudUploadAlt />
+
+                      Upload New Resume
+
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        hidden
+                      />
+
+                    </label>
+
+                  </div>
+
                 </div>
+
               </div>
+
+              {/* ================================
+                  RIGHT COLUMN
+              ================================= */}
+
+              <div className="right-column">
+
+                {/* PROFILE OVERVIEW */}
+
+                <div className="glass-card analysis-card fade-up">
+
+                  <div className="section-heading">
+
+                    <div className="heading-icon blue">
+                      <FaBriefcase />
+                    </div>
+
+                    <div>
+                      <h2>
+                        Profile Overview
+                      </h2>
+
+                      <p>
+                        AI extracted information
+                        from your resume
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <div className="overview-grid">
+
+                    <div className="overview-item">
+
+                      <div className="overview-icon blue-text">
+                        <FaBriefcase />
+                      </div>
+
+                      <div>
+
+                        <span>
+                          EXPERIENCE
+                        </span>
+
+                        <p>
+                          {analysis.experience ||
+                            "Not detected"}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    <div className="overview-item">
+
+                      <div className="overview-icon purple-text">
+                        <FaGraduationCap />
+                      </div>
+
+                      <div>
+
+                        <span>
+                          EDUCATION
+                        </span>
+
+                        <p>
+                          {analysis.education ||
+                            "Not detected"}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {/* SKILLS */}
+
+                <div className="glass-card analysis-card fade-up">
+
+                  <div className="section-heading">
+
+                    <div className="heading-icon cyan">
+                      <FaMagic />
+                    </div>
+
+                    <div>
+                      <h2>
+                        Detected Skills
+                      </h2>
+
+                      <p>
+                        Skills identified by AI
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <div className="skills-container">
+
+                    {(analysis.skills || [])
+                      .map((skill, index) => (
+
+                        <span
+                          key={index}
+                          className="skill-tag"
+                          style={{
+                            animationDelay:
+                              `${index * 0.08}s`,
+                          }}
+                        >
+                          {skill}
+                        </span>
+
+                      ))}
+
+                    {(!analysis.skills ||
+                      analysis.skills.length === 0) && (
+
+                      <p className="empty-text">
+                        No specific skills detected.
+                      </p>
+
+                    )}
+
+                  </div>
+
+                </div>
+
+                {/* STRENGTHS / WEAKNESSES */}
+
+                <div className="two-column">
+
+                  {/* STRENGTHS */}
+
+                  <div className="glass-card strength-card fade-up">
+
+                    <div className="strength-heading">
+
+                      <div className="success-icon">
+                        <FaCheckCircle />
+                      </div>
+
+                      <h2>
+                        Strengths
+                      </h2>
+
+                    </div>
+
+                    <ul>
+
+                      {(analysis.strengths || [])
+                        .map((item, index) => (
+
+                          <li key={index}>
+
+                            <span className="success-dot"></span>
+
+                            {item}
+
+                          </li>
+
+                        ))}
+
+                    </ul>
+
+                  </div>
+
+                  {/* WEAKNESSES */}
+
+                  <div className="glass-card weakness-card fade-up">
+
+                    <div className="weakness-heading">
+
+                      <div className="danger-icon">
+                        <FaExclamationTriangle />
+                      </div>
+
+                      <h2>
+                        Areas to Improve
+                      </h2>
+
+                    </div>
+
+                    <ul>
+
+                      {(analysis.weaknesses || [])
+                        .map((item, index) => (
+
+                          <li key={index}>
+
+                            <span className="danger-dot"></span>
+
+                            {item}
+
+                          </li>
+
+                        ))}
+
+                    </ul>
+
+                  </div>
+
+                </div>
+
+                {/* RECOMMENDED JOBS */}
+
+                <div className="glass-card jobs-card fade-up">
+
+                  <div className="jobs-header">
+
+                    <div className="heading-icon purple">
+                      <FaArrowRight />
+                    </div>
+
+                    <div>
+
+                      <h2>
+                        Target Roles
+                      </h2>
+
+                      <p>
+                        Recommended career paths
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="jobs-container">
+
+                    {(analysis.recommended_jobs || [])
+                      .map((job, index) => (
+
+                        <span
+                          key={index}
+                          className="job-tag"
+                        >
+                          {job}
+                        </span>
+
+                      ))}
+
+                  </div>
+
+                </div>
+
+              </div>
+
             </div>
 
-            {/* RIGHT COLUMN: Analysis Details */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
-              
-              {/* Summary */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "30px" }}>
-                <h2 style={{ fontSize: "20px", margin: "0 0 20px 0", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "15px" }}>Profile Overview</h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                  <div style={{ display: "flex", gap: "15px" }}>
-                    <FaBriefcase size={20} color="#60a5fa" style={{ marginTop: "3px" }} />
-                    <div>
-                      <p style={{ margin: "0 0 5px 0", color: "#94a3b8", fontSize: "13px", fontWeight: "bold", textTransform: "uppercase" }}>Experience</p>
-                      <p style={{ margin: 0, color: "#e2e8f0", lineHeight: "1.6" }}>{analysis.experience}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: "15px", marginTop: "10px" }}>
-                    <FaGraduationCap size={22} color="#a78bfa" style={{ marginTop: "2px" }} />
-                    <div>
-                      <p style={{ margin: "0 0 5px 0", color: "#94a3b8", fontSize: "13px", fontWeight: "bold", textTransform: "uppercase" }}>Education</p>
-                      <p style={{ margin: 0, color: "#e2e8f0", lineHeight: "1.6" }}>{analysis.education}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          )}
 
-              {/* Skills */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", padding: "30px" }}>
-                <h2 style={{ fontSize: "20px", margin: "0 0 20px 0" }}>Detected Skills</h2>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  {(analysis.skills || []).map((skill, index) => (
-                    <span key={index} style={{ background: "rgba(59, 130, 246, 0.1)", border: "1px solid rgba(59, 130, 246, 0.3)", color: "#93c5fd", padding: "8px 16px", borderRadius: "20px", fontSize: "14px", fontWeight: "500" }}>
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
+        {/* ================================
+            PDF MODAL
+        ================================= */}
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "25px" }}>
-                {/* Strengths */}
-                <div style={{ background: "rgba(34, 197, 94, 0.05)", border: "1px solid rgba(34, 197, 94, 0.2)", borderRadius: "24px", padding: "30px" }}>
-                  <h2 style={{ fontSize: "18px", margin: "0 0 20px 0", color: "#4ade80", display: "flex", alignItems: "center", gap: "10px" }}>
-                    <FaCheckCircle /> Strengths
-                  </h2>
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {(analysis.strengths || []).map((item, index) => (
-                      <li key={index} style={{ color: "#e2e8f0", fontSize: "14.5px", lineHeight: "1.5", position: "relative", paddingLeft: "20px" }}>
-                        <span style={{ position: "absolute", left: 0, top: "6px", width: "6px", height: "6px", background: "#4ade80", borderRadius: "50%" }} />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Weaknesses */}
-                <div style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "24px", padding: "30px" }}>
-                  <h2 style={{ fontSize: "18px", margin: "0 0 20px 0", color: "#f87171", display: "flex", alignItems: "center", gap: "10px" }}>
-                    <FaExclamationTriangle /> Areas for Improvement
-                  </h2>
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {(analysis.weaknesses || []).map((item, index) => (
-                      <li key={index} style={{ color: "#e2e8f0", fontSize: "14.5px", lineHeight: "1.5", position: "relative", paddingLeft: "20px" }}>
-                        <span style={{ position: "absolute", left: 0, top: "6px", width: "6px", height: "6px", background: "#f87171", borderRadius: "50%" }} />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Recommended Jobs */}
-              <div style={{ background: "linear-gradient(145deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.02) 100%)", border: "1px solid rgba(139, 92, 246, 0.2)", borderRadius: "24px", padding: "30px" }}>
-                <h2 style={{ fontSize: "20px", margin: "0 0 20px 0", color: "#c4b5fd" }}>Target Roles & Recommended Jobs</h2>
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  {(analysis.recommended_jobs || []).map((job, index) => (
-                    <span key={index} style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 18px", borderRadius: "12px", fontSize: "14px", fontWeight: "600", color: "white" }}>
-                      {job}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-        {/* Full-Screen PDF Modal */}
         {showResume && file && (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.9)", backdropFilter: "blur(10px)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999, padding: "40px" }}>
-            <div style={{ width: "100%", maxWidth: "1000px", height: "100%", background: "#1e293b", borderRadius: "20px", overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)" }}>
-              
-              {/* Modal Header */}
-              <div style={{ padding: "15px 25px", background: "rgba(0,0,0,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                <h3 style={{ margin: 0, fontSize: "16px", color: "white", display: "flex", alignItems: "center", gap: "10px" }}>
-                  <FaFilePdf color="#ef4444" /> {file.name}
-                </h3>
+
+          <div className="pdf-modal">
+
+            <div className="pdf-window">
+
+              <div className="pdf-header">
+
+                <div className="pdf-title">
+
+                  <FaFilePdf />
+
+                  <span>
+                    {file.name}
+                  </span>
+
+                </div>
+
                 <button
-                  onClick={() => setShowResume(false)}
-                  style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "5px", transition: "color 0.2s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#94a3b8")}
+                  onClick={() =>
+                    setShowResume(false)
+                  }
+                  className="close-button"
                 >
-                  <FaTimes size={24} />
+                  <FaTimes />
                 </button>
+
               </div>
 
-              {/* PDF iframe */}
               <iframe
                 src={URL.createObjectURL(file)}
-                style={{ width: "100%", height: "100%", border: "none", background: "white" }}
                 title="Resume Viewer"
+                className="pdf-viewer"
               />
+
             </div>
+
           </div>
+
         )}
+
       </div>
+
+      {/* ================================
+          PAGE CSS
+      ================================= */}
+
+      <style>{`
+
+        * {
+          box-sizing: border-box;
+        }
+
+        .resume-page {
+
+          min-height: 100vh;
+
+          background:
+            radial-gradient(
+              circle at 50% 20%,
+              rgba(37,99,235,.15),
+              transparent 35%
+            ),
+            linear-gradient(
+              135deg,
+              #020617 0%,
+              #0f172a 50%,
+              #172554 100%
+            );
+
+          color: white;
+
+          font-family:
+            "Inter",
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+
+          display: flex;
+
+          position: relative;
+
+          overflow-x: hidden;
+
+        }
+
+        /* ==========================
+           BACKGROUND
+        ========================== */
+
+        .background-animation {
+
+          position: fixed;
+
+          inset: 0;
+
+          overflow: hidden;
+
+          pointer-events: none;
+
+          z-index: 0;
+
+        }
+
+        .glow {
+
+          position: absolute;
+
+          border-radius: 50%;
+
+          filter: blur(100px);
+
+          opacity: .22;
+
+          animation:
+            floatingGlow 14s
+            ease-in-out
+            infinite;
+
+        }
+
+        .glow-one {
+
+          width: 450px;
+          height: 450px;
+
+          background: #2563eb;
+
+          top: -180px;
+          left: -100px;
+
+        }
+
+        .glow-two {
+
+          width: 400px;
+          height: 400px;
+
+          background: #7c3aed;
+
+          right: -150px;
+          bottom: -100px;
+
+          animation-delay: 4s;
+
+        }
+
+        .glow-three {
+
+          width: 300px;
+          height: 300px;
+
+          background: #06b6d4;
+
+          left: 50%;
+          top: 45%;
+
+          animation-delay: 8s;
+
+        }
+
+        .particle {
+
+          position: absolute;
+
+          bottom: -20px;
+
+          width: 3px;
+          height: 3px;
+
+          border-radius: 50%;
+
+          background: #60a5fa;
+
+          opacity: .45;
+
+          animation:
+            particleRise
+            linear
+            infinite;
+
+        }
+
+        /* ==========================
+           MAIN
+        ========================== */
+
+        .main-content {
+
+          margin-left: 260px;
+
+          padding: 45px 55px;
+
+          width: calc(100% - 260px);
+
+          max-width: 1500px;
+
+          position: relative;
+
+          z-index: 2;
+
+        }
+
+        /* ==========================
+           HEADER
+        ========================== */
+
+        .page-header {
+
+          margin-bottom: 45px;
+
+        }
+
+        .title-wrapper {
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 18px;
+
+        }
+
+        .title-icon {
+
+          width: 62px;
+          height: 62px;
+
+          border-radius: 18px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          color: #60a5fa;
+
+          background:
+            linear-gradient(
+              135deg,
+              rgba(59,130,246,.2),
+              rgba(139,92,246,.12)
+            );
+
+          border:
+            1px solid
+            rgba(96,165,250,.3);
+
+          box-shadow:
+            0 0 30px
+            rgba(59,130,246,.18);
+
+          animation:
+            iconPulse
+            3s
+            ease-in-out
+            infinite;
+
+        }
+
+        .page-header h1 {
+
+          margin: 0;
+
+          font-size: 44px;
+
+          font-weight: 900;
+
+          letter-spacing: -1px;
+
+          background:
+            linear-gradient(
+              90deg,
+              #ffffff,
+              #93c5fd,
+              #c4b5fd
+            );
+
+          -webkit-background-clip: text;
+
+          -webkit-text-fill-color: transparent;
+
+        }
+
+        .title-line {
+
+          height: 3px;
+
+          width: 85px;
+
+          margin-top: 8px;
+
+          border-radius: 10px;
+
+          background:
+            linear-gradient(
+              90deg,
+              #3b82f6,
+              #8b5cf6
+            );
+
+          box-shadow:
+            0 0 15px
+            rgba(96,165,250,.5);
+
+        }
+
+        .page-header p {
+
+          color: #94a3b8;
+
+          font-size: 16px;
+
+          margin:
+            18px
+            0
+            0
+            80px;
+
+          line-height: 1.7;
+
+        }
+
+        /* ==========================
+           UPLOAD
+        ========================== */
+
+        .upload-zone {
+
+          min-height: 410px;
+
+          display: flex;
+
+          flex-direction: column;
+
+          align-items: center;
+
+          justify-content: center;
+
+          position: relative;
+
+          overflow: hidden;
+
+          cursor: pointer;
+
+          text-align: center;
+
+          border:
+            2px dashed
+            rgba(255,255,255,.15);
+
+          border-radius: 30px;
+
+          background:
+            rgba(255,255,255,.035);
+
+          backdrop-filter:
+            blur(25px);
+
+          transition:
+            .4s ease;
+
+          margin-bottom: 40px;
+
+        }
+
+        .upload-zone::before {
+
+          content: "";
+
+          position: absolute;
+
+          inset: 0;
+
+          background:
+            radial-gradient(
+              circle at center,
+              rgba(59,130,246,.13),
+              transparent 60%
+            );
+
+          opacity: .7;
+
+        }
+
+        .upload-zone:hover {
+
+          transform:
+            translateY(-6px);
+
+          border-color:
+            rgba(96,165,250,.7);
+
+          box-shadow:
+            0 0 50px
+            rgba(59,130,246,.18);
+
+        }
+
+        .upload-icon {
+
+          width: 100px;
+          height: 100px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          border-radius: 50%;
+
+          color: #60a5fa;
+
+          background:
+            radial-gradient(
+              circle,
+              rgba(59,130,246,.2),
+              rgba(59,130,246,.03)
+            );
+
+          border:
+            1px solid
+            rgba(96,165,250,.25);
+
+          box-shadow:
+            0 0 40px
+            rgba(59,130,246,.18);
+
+          animation:
+            uploadFloat
+            3s
+            ease-in-out
+            infinite;
+
+          position: relative;
+
+          z-index: 1;
+
+        }
+
+        .upload-zone h2 {
+
+          font-size: 27px;
+
+          margin:
+            25px
+            0
+            8px;
+
+          position: relative;
+
+          z-index: 1;
+
+        }
+
+        .upload-zone p {
+
+          color: #cbd5e1;
+
+          margin: 0;
+
+          position: relative;
+
+          z-index: 1;
+
+        }
+
+        .upload-format {
+
+          color: #64748b;
+
+          font-size: 13px;
+
+          margin-top: 8px;
+
+          position: relative;
+
+          z-index: 1;
+
+        }
+
+        .upload-button {
+
+          margin-top: 25px;
+
+          padding:
+            13px
+            24px;
+
+          border-radius: 12px;
+
+          background:
+            linear-gradient(
+              135deg,
+              #3b82f6,
+              #6366f1
+            );
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 9px;
+
+          font-weight: 600;
+
+          box-shadow:
+            0 10px 30px
+            rgba(59,130,246,.25);
+
+          position: relative;
+
+          z-index: 1;
+
+        }
+
+        /* ==========================
+           RESULTS
+        ========================== */
+
+        .results-layout {
+
+          display: grid;
+
+          grid-template-columns:
+            350px
+            minmax(0, 1fr);
+
+          gap: 30px;
+
+          align-items: start;
+
+        }
+
+        .left-column {
+
+          display: flex;
+
+          flex-direction: column;
+
+          gap: 25px;
+
+          position: sticky;
+
+          top: 30px;
+
+        }
+
+        .right-column {
+
+          display: flex;
+
+          flex-direction: column;
+
+          gap: 25px;
+
+          min-width: 0;
+
+        }
+
+        /* ==========================
+           GLASS CARD
+        ========================== */
+
+        .glass-card {
+
+          position: relative;
+
+          overflow: hidden;
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(255,255,255,.065),
+              rgba(255,255,255,.018)
+            );
+
+          backdrop-filter:
+            blur(24px);
+
+          border:
+            1px solid
+            rgba(255,255,255,.08);
+
+          border-radius: 24px;
+
+          box-shadow:
+            0 15px 40px
+            rgba(0,0,0,.25);
+
+          transition:
+            transform .35s ease,
+            border .35s ease,
+            box-shadow .35s ease;
+
+        }
+
+        .glass-card:hover {
+
+          transform:
+            translateY(-5px);
+
+          border-color:
+            rgba(96,165,250,.28);
+
+          box-shadow:
+            0 20px 50px
+            rgba(37,99,235,.13);
+
+        }
+
+        .card-top-line {
+
+          height: 3px;
+
+          position: absolute;
+
+          top: 0;
+          left: 0;
+          right: 0;
+
+          background:
+            linear-gradient(
+              90deg,
+              #3b82f6,
+              #8b5cf6,
+              #06b6d4
+            );
+
+        }
+
+        /* ==========================
+           SCORE
+        ========================== */
+
+        .score-card {
+
+          padding:
+            32px
+            25px;
+
+          text-align: center;
+
+        }
+
+        .card-heading {
+
+          display: flex;
+
+          justify-content: center;
+
+          align-items: center;
+
+          gap: 8px;
+
+          color: #60a5fa;
+
+          font-size: 13px;
+
+          font-weight: 700;
+
+          text-transform:
+            uppercase;
+
+          letter-spacing: 1px;
+
+          margin-bottom: 20px;
+
+        }
+
+        .score-card h2 {
+
+          font-size: 19px;
+
+          margin-bottom: 28px;
+
+        }
+
+        .score-wrapper {
+
+          display: flex;
+
+          justify-content: center;
+
+        }
+
+        .score-ring {
+
+          width: 185px;
+          height: 185px;
+
+          border-radius: 50%;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          animation:
+            scorePulse
+            3s
+            ease-in-out
+            infinite;
+
+          transition: .5s;
+
+        }
+
+        .score-inner {
+
+          width: 155px;
+          height: 155px;
+
+          border-radius: 50%;
+
+          background:
+            radial-gradient(
+              circle,
+              #172554,
+              #0f172a
+            );
+
+          display: flex;
+
+          flex-direction: column;
+
+          align-items: center;
+          justify-content: center;
+
+          border:
+            1px solid
+            rgba(255,255,255,.08);
+
+        }
+
+        .score-number {
+
+          font-size: 47px;
+
+          font-weight: 900;
+
+          line-height: 1;
+
+        }
+
+        .score-percent {
+
+          color: #94a3b8;
+
+          font-size: 20px;
+
+        }
+
+        .score-label {
+
+          color: #64748b;
+
+          font-size: 9px;
+
+          font-weight: 700;
+
+          letter-spacing: 2px;
+
+          margin-top: 5px;
+
+        }
+
+        .score-message {
+
+          color: #94a3b8;
+
+          font-size: 13px;
+
+          line-height: 1.6;
+
+          margin:
+            20px
+            0
+            0;
+
+        }
+
+        /* ==========================
+           FILE
+        ========================== */
+
+        .file-card {
+
+          padding: 25px;
+
+        }
+
+        .file-header {
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 15px;
+
+          margin-bottom: 22px;
+
+        }
+
+        .pdf-icon {
+
+          width: 52px;
+          height: 52px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          border-radius: 14px;
+
+          color: #f87171;
+
+          background:
+            rgba(239,68,68,.1);
+
+          border:
+            1px solid
+            rgba(239,68,68,.2);
+
+        }
+
+        .file-details {
+
+          min-width: 0;
+
+        }
+
+        .file-details h3 {
+
+          margin: 0 0 5px;
+
+          font-size: 15px;
+
+          white-space: nowrap;
+
+          overflow: hidden;
+
+          text-overflow: ellipsis;
+
+        }
+
+        .file-details p {
+
+          margin: 0;
+
+          color: #64748b;
+
+          font-size: 12px;
+
+        }
+
+        .file-actions {
+
+          display: flex;
+
+          flex-direction: column;
+
+          gap: 10px;
+
+        }
+
+        .secondary-button,
+        .primary-button {
+
+          width: 100%;
+
+          min-height: 48px;
+
+          border-radius: 12px;
+
+          display: flex;
+
+          align-items: center;
+
+          justify-content: center;
+
+          gap: 9px;
+
+          font-size: 14px;
+
+          font-weight: 600;
+
+          cursor: pointer;
+
+          transition: .3s ease;
+
+        }
+
+        .secondary-button {
+
+          background:
+            rgba(255,255,255,.025);
+
+          color: white;
+
+          border:
+            1px solid
+            rgba(255,255,255,.15);
+
+        }
+
+        .secondary-button:hover {
+
+          background:
+            rgba(255,255,255,.08);
+
+          border-color:
+            rgba(96,165,250,.4);
+
+          transform:
+            translateY(-2px);
+
+        }
+
+        .primary-button {
+
+          background:
+            linear-gradient(
+              135deg,
+              #3b82f6,
+              #6366f1
+            );
+
+          box-shadow:
+            0 8px 25px
+            rgba(59,130,246,.25);
+
+        }
+
+        .primary-button:hover {
+
+          transform:
+            translateY(-3px);
+
+          box-shadow:
+            0 12px 35px
+            rgba(59,130,246,.4);
+
+        }
+
+        /* ==========================
+           SECTION
+        ========================== */
+
+        .analysis-card {
+
+          padding: 30px;
+
+        }
+
+        .section-heading {
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 14px;
+
+          margin-bottom: 25px;
+
+        }
+
+        .section-heading h2 {
+
+          margin: 0;
+
+          font-size: 19px;
+
+        }
+
+        .section-heading p {
+
+          margin: 5px 0 0;
+
+          color: #64748b;
+
+          font-size: 12px;
+
+        }
+
+        .heading-icon {
+
+          width: 45px;
+          height: 45px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          border-radius: 13px;
+
+        }
+
+        .heading-icon.blue {
+
+          color: #60a5fa;
+
+          background:
+            rgba(59,130,246,.12);
+
+        }
+
+        .heading-icon.cyan {
+
+          color: #22d3ee;
+
+          background:
+            rgba(6,182,212,.12);
+
+        }
+
+        .heading-icon.purple {
+
+          color: #c4b5fd;
+
+          background:
+            rgba(139,92,246,.12);
+
+        }
+
+        .overview-grid {
+
+          display: grid;
+
+          grid-template-columns:
+            1fr
+            1fr;
+
+          gap: 20px;
+
+        }
+
+        .overview-item {
+
+          display: flex;
+
+          gap: 15px;
+
+          padding: 18px;
+
+          border-radius: 15px;
+
+          background:
+            rgba(255,255,255,.025);
+
+          border:
+            1px solid
+            rgba(255,255,255,.05);
+
+        }
+
+        .overview-icon {
+
+          font-size: 21px;
+
+          margin-top: 2px;
+
+        }
+
+        .blue-text {
+          color: #60a5fa;
+        }
+
+        .purple-text {
+          color: #a78bfa;
+        }
+
+        .overview-item span {
+
+          color: #64748b;
+
+          font-size: 10px;
+
+          font-weight: 800;
+
+          letter-spacing: 1px;
+
+        }
+
+        .overview-item p {
+
+          color: #e2e8f0;
+
+          font-size: 14px;
+
+          line-height: 1.6;
+
+          margin:
+            6px
+            0
+            0;
+
+        }
+
+        /* ==========================
+           SKILLS
+        ========================== */
+
+        .skills-container {
+
+          display: flex;
+
+          gap: 10px;
+
+          flex-wrap: wrap;
+
+        }
+
+        .skill-tag {
+
+          padding:
+            9px
+            16px;
+
+          border-radius: 20px;
+
+          color: #93c5fd;
+
+          background:
+            rgba(59,130,246,.08);
+
+          border:
+            1px solid
+            rgba(59,130,246,.25);
+
+          font-size: 13px;
+
+          font-weight: 600;
+
+          animation:
+            tagAppear
+            .5s
+            ease
+            both;
+
+          transition: .25s;
+
+        }
+
+        .skill-tag:hover {
+
+          transform:
+            translateY(-3px)
+            scale(1.03);
+
+          background:
+            rgba(59,130,246,.17);
+
+          box-shadow:
+            0 0 18px
+            rgba(59,130,246,.15);
+
+        }
+
+        .empty-text {
+
+          color: #64748b;
+
+        }
+
+        /* ==========================
+           STRENGTHS
+        ========================== */
+
+        .two-column {
+
+          display: grid;
+
+          grid-template-columns:
+            1fr
+            1fr;
+
+          gap: 25px;
+
+        }
+
+        .strength-card,
+        .weakness-card {
+
+          padding: 28px;
+
+        }
+
+        .strength-card {
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(34,197,94,.08),
+              rgba(34,197,94,.015)
+            );
+
+          border-color:
+            rgba(34,197,94,.18);
+
+        }
+
+        .weakness-card {
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(239,68,68,.08),
+              rgba(239,68,68,.015)
+            );
+
+          border-color:
+            rgba(239,68,68,.18);
+
+        }
+
+        .strength-heading,
+        .weakness-heading {
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 10px;
+
+          margin-bottom: 20px;
+
+        }
+
+        .strength-heading h2,
+        .weakness-heading h2 {
+
+          margin: 0;
+
+          font-size: 18px;
+
+        }
+
+        .strength-heading {
+
+          color: #4ade80;
+
+        }
+
+        .weakness-heading {
+
+          color: #f87171;
+
+        }
+
+        .success-icon,
+        .danger-icon {
+
+          width: 38px;
+          height: 38px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          border-radius: 10px;
+
+        }
+
+        .success-icon {
+
+          background:
+            rgba(34,197,94,.12);
+
+        }
+
+        .danger-icon {
+
+          background:
+            rgba(239,68,68,.12);
+
+        }
+
+        .strength-card ul,
+        .weakness-card ul {
+
+          padding: 0;
+
+          margin: 0;
+
+          list-style: none;
+
+          display: flex;
+
+          flex-direction: column;
+
+          gap: 13px;
+
+        }
+
+        .strength-card li,
+        .weakness-card li {
+
+          color: #e2e8f0;
+
+          font-size: 13.5px;
+
+          line-height: 1.6;
+
+          display: flex;
+
+          align-items: flex-start;
+
+          gap: 10px;
+
+        }
+
+        .success-dot,
+        .danger-dot {
+
+          width: 7px;
+          height: 7px;
+
+          border-radius: 50%;
+
+          flex-shrink: 0;
+
+          margin-top: 8px;
+
+        }
+
+        .success-dot {
+
+          background: #4ade80;
+
+          box-shadow:
+            0 0 10px
+            rgba(74,222,128,.6);
+
+        }
+
+        .danger-dot {
+
+          background: #f87171;
+
+          box-shadow:
+            0 0 10px
+            rgba(248,113,113,.6);
+
+        }
+
+        /* ==========================
+           JOBS
+        ========================== */
+
+        .jobs-card {
+
+          padding: 30px;
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(139,92,246,.1),
+              rgba(139,92,246,.015)
+            );
+
+          border-color:
+            rgba(139,92,246,.2);
+
+        }
+
+        .jobs-header {
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 14px;
+
+          margin-bottom: 22px;
+
+        }
+
+        .jobs-header h2 {
+
+          margin: 0;
+
+          font-size: 20px;
+
+          color: #ddd6fe;
+
+        }
+
+        .jobs-header p {
+
+          margin: 5px 0 0;
+
+          color: #64748b;
+
+          font-size: 12px;
+
+        }
+
+        .jobs-container {
+
+          display: flex;
+
+          gap: 12px;
+
+          flex-wrap: wrap;
+
+        }
+
+        .job-tag {
+
+          padding:
+            11px
+            18px;
+
+          border-radius: 12px;
+
+          background:
+            rgba(0,0,0,.25);
+
+          border:
+            1px solid
+            rgba(255,255,255,.08);
+
+          color: #f8fafc;
+
+          font-size: 13px;
+
+          font-weight: 600;
+
+          transition: .3s ease;
+
+        }
+
+        .job-tag:hover {
+
+          transform:
+            translateY(-3px);
+
+          border-color:
+            rgba(167,139,250,.5);
+
+          box-shadow:
+            0 0 20px
+            rgba(139,92,246,.15);
+
+        }
+
+        /* ==========================
+           LOADING
+        ========================== */
+
+        .loading-overlay {
+
+          position: fixed;
+
+          inset: 0;
+
+          z-index: 5000;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          background:
+            rgba(2,6,23,.82);
+
+          backdrop-filter:
+            blur(15px);
+
+        }
+
+        .loader-container {
+
+          animation:
+            loaderAppear
+            .5s
+            ease;
+
+        }
+
+        /* ==========================
+           PDF MODAL
+        ========================== */
+
+        .pdf-modal {
+
+          position: fixed;
+
+          inset: 0;
+
+          z-index: 9999;
+
+          padding: 30px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          background:
+            rgba(2,6,23,.88);
+
+          backdrop-filter:
+            blur(14px);
+
+          animation:
+            fadeIn
+            .3s
+            ease;
+
+        }
+
+        .pdf-window {
+
+          width: 100%;
+
+          max-width: 1100px;
+
+          height: 92vh;
+
+          display: flex;
+
+          flex-direction: column;
+
+          overflow: hidden;
+
+          background:
+            #0f172a;
+
+          border:
+            1px solid
+            rgba(255,255,255,.1);
+
+          border-radius: 20px;
+
+          box-shadow:
+            0 30px 80px
+            rgba(0,0,0,.6);
+
+          animation:
+            modalOpen
+            .4s
+            ease;
+
+        }
+
+        .pdf-header {
+
+          height: 65px;
+
+          padding:
+            0
+            20px;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: space-between;
+
+          border-bottom:
+            1px solid
+            rgba(255,255,255,.07);
+
+          background:
+            rgba(0,0,0,.2);
+
+        }
+
+        .pdf-title {
+
+          display: flex;
+
+          align-items: center;
+
+          gap: 10px;
+
+          min-width: 0;
+
+          color: white;
+
+        }
+
+        .pdf-title svg {
+
+          color: #ef4444;
+
+          flex-shrink: 0;
+
+        }
+
+        .pdf-title span {
+
+          overflow: hidden;
+
+          text-overflow: ellipsis;
+
+          white-space: nowrap;
+
+        }
+
+        .close-button {
+
+          width: 40px;
+          height: 40px;
+
+          border: none;
+
+          border-radius: 10px;
+
+          background:
+            transparent;
+
+          color: #94a3b8;
+
+          display: flex;
+
+          align-items: center;
+          justify-content: center;
+
+          cursor: pointer;
+
+          transition: .25s;
+
+        }
+
+        .close-button:hover {
+
+          color: white;
+
+          background:
+            rgba(239,68,68,.15);
+
+          transform:
+            rotate(90deg);
+
+        }
+
+        .pdf-viewer {
+
+          width: 100%;
+
+          flex: 1;
+
+          border: none;
+
+          background: white;
+
+        }
+
+        /* ==========================
+           ANIMATIONS
+        ========================== */
+
+        .fade-up {
+
+          animation:
+            fadeUp
+            .7s
+            ease
+            both;
+
+        }
+
+        @keyframes fadeUp {
+
+          from {
+
+            opacity: 0;
+
+            transform:
+              translateY(25px);
+
+          }
+
+          to {
+
+            opacity: 1;
+
+            transform:
+              translateY(0);
+
+          }
+
+        }
+
+        @keyframes floatingGlow {
+
+          0%,100% {
+
+            transform:
+              translate3d(0,0,0)
+              scale(1);
+
+          }
+
+          50% {
+
+            transform:
+              translate3d(35px,-35px,0)
+              scale(1.08);
+
+          }
+
+        }
+
+        @keyframes particleRise {
+
+          0% {
+
+            transform:
+              translateY(0);
+
+            opacity: 0;
+
+          }
+
+          20% {
+
+            opacity: .5;
+
+          }
+
+          100% {
+
+            transform:
+              translateY(-110vh);
+
+            opacity: 0;
+
+          }
+
+        }
+
+        @keyframes iconPulse {
+
+          0%,100% {
+
+            transform:
+              scale(1);
+
+          }
+
+          50% {
+
+            transform:
+              scale(1.05);
+
+          }
+
+        }
+
+        @keyframes uploadFloat {
+
+          0%,100% {
+
+            transform:
+              translateY(0);
+
+          }
+
+          50% {
+
+            transform:
+              translateY(-10px);
+
+          }
+
+        }
+
+        @keyframes scorePulse {
+
+          0%,100% {
+
+            transform:
+              scale(1);
+
+          }
+
+          50% {
+
+            transform:
+              scale(1.045);
+
+          }
+
+        }
+
+        @keyframes tagAppear {
+
+          from {
+
+            opacity: 0;
+
+            transform:
+              translateY(10px)
+              scale(.9);
+
+          }
+
+          to {
+
+            opacity: 1;
+
+            transform:
+              translateY(0)
+              scale(1);
+
+          }
+
+        }
+
+        @keyframes loaderAppear {
+
+          from {
+
+            opacity: 0;
+
+            transform:
+              scale(.9);
+
+          }
+
+          to {
+
+            opacity: 1;
+
+            transform:
+              scale(1);
+
+          }
+
+        }
+
+        @keyframes fadeIn {
+
+          from {
+
+            opacity: 0;
+
+          }
+
+          to {
+
+            opacity: 1;
+
+          }
+
+        }
+
+        @keyframes modalOpen {
+
+          from {
+
+            opacity: 0;
+
+            transform:
+              scale(.94)
+              translateY(20px);
+
+          }
+
+          to {
+
+            opacity: 1;
+
+            transform:
+              scale(1)
+              translateY(0);
+
+          }
+
+        }
+
+        /* ==========================
+           RESPONSIVE
+        ========================== */
+
+        @media (max-width: 1100px) {
+
+          .main-content {
+
+            padding:
+              35px;
+
+          }
+
+          .results-layout {
+
+            grid-template-columns:
+              1fr;
+
+          }
+
+          .left-column {
+
+            position: static;
+
+            display: grid;
+
+            grid-template-columns:
+              1fr
+              1fr;
+
+          }
+
+        }
+
+        @media (max-width: 800px) {
+
+          .main-content {
+
+            margin-left: 0;
+
+            width: 100%;
+
+            padding:
+              30px
+              20px;
+
+          }
+
+          .page-header h1 {
+
+            font-size: 34px;
+
+          }
+
+          .page-header p {
+
+            margin-left: 0;
+
+          }
+
+          .left-column {
+
+            grid-template-columns:
+              1fr;
+
+          }
+
+          .overview-grid,
+          .two-column {
+
+            grid-template-columns:
+              1fr;
+
+          }
+
+        }
+
+        @media (max-width: 600px) {
+
+          .main-content {
+
+            padding:
+              25px
+              15px;
+
+          }
+
+          .page-header h1 {
+
+            font-size: 29px;
+
+          }
+
+          .title-icon {
+
+            width: 52px;
+            height: 52px;
+
+          }
+
+          .upload-zone {
+
+            min-height: 350px;
+
+            padding:
+              25px;
+
+          }
+
+          .upload-zone h2 {
+
+            font-size: 22px;
+
+          }
+
+          .analysis-card,
+          .strength-card,
+          .weakness-card,
+          .jobs-card {
+
+            padding: 22px;
+
+          }
+
+          .pdf-modal {
+
+            padding: 10px;
+
+          }
+
+          .pdf-window {
+
+            height: 95vh;
+
+            border-radius: 12px;
+
+          }
+
+        }
+
+      `}</style>
+
     </div>
   );
 }
