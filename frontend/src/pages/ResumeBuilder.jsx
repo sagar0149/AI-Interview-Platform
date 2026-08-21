@@ -11,7 +11,6 @@ import {
   FaMapMarkerAlt,
   FaGithub,
   FaLinkedin,
-  FaSparkles,
 } from "react-icons/fa";
 
 function ResumeBuilder() {
