@@ -19,7 +19,6 @@ import {
   FaFileAlt,
   FaMagic,
   FaArrowRight,
-  FaSparkles,
 } from "react-icons/fa";
 
 function ResumeUpload() {
@@ -386,7 +385,7 @@ function ResumeUpload() {
 
             <div className="title-badge">
 
-              <FaSparkles />
+              <FaMagic />
 
               AI RESUME ANALYSIS
 
