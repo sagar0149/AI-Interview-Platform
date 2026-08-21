@@ -528,6 +528,7 @@ API endpoint names should be kept synchronized with the actual FastAPI routes im
 
 
                   🔒 Security Features
+                  
 Authentication
 JWT Authentication
 Protected APIs
